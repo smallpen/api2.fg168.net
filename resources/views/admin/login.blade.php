@@ -130,6 +130,22 @@
             color: #6b7280;
             cursor: pointer;
         }
+
+        .form-control-error {
+            border-color: #ef4444;
+        }
+
+        .form-control-error:focus {
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+
+        .error-message {
+            display: block;
+            margin-top: 5px;
+            font-size: 13px;
+            color: #ef4444;
+        }
     </style>
 </head>
 <body>
@@ -151,6 +167,14 @@
             </div>
         @endif
 
+        @if($errors->any())
+            <div class="alert alert-error">
+                @foreach($errors->all() as $error)
+                    <div>{{ $error }}</div>
+                @endforeach
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('admin.login.post') }}">
             @csrf
 
@@ -160,12 +184,15 @@
                     type="email" 
                     id="email" 
                     name="email" 
-                    class="form-control" 
+                    class="form-control @error('email') form-control-error @enderror" 
                     placeholder="請輸入電子郵件"
                     required 
                     autofocus
                     value="{{ old('email') }}"
                 >
+                @error('email')
+                    <span class="error-message">{{ $message }}</span>
+                @enderror
             </div>
 
             <div class="form-group">
@@ -174,10 +201,13 @@
                     type="password" 
                     id="password" 
                     name="password" 
-                    class="form-control" 
+                    class="form-control @error('password') form-control-error @enderror" 
                     placeholder="請輸入密碼"
                     required
                 >
+                @error('password')
+                    <span class="error-message">{{ $message }}</span>
+                @enderror
             </div>
 
             <div class="checkbox-group">

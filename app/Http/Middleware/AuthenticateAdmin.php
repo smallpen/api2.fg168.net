@@ -4,12 +4,11 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Admin 驗證中介軟體
- * 
- * 確保只有已驗證的管理員使用者可以存取 Admin UI
+ * 管理員驗證中介軟體
  */
 class AuthenticateAdmin
 {
@@ -21,40 +20,17 @@ class AuthenticateAdmin
     public function handle(Request $request, Closure $next): Response
     {
         // 檢查使用者是否已登入
-        if (!auth()->check()) {
-            // 如果是 API 請求，返回 JSON 錯誤
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'error' => [
-                        'code' => 'AUTHENTICATION_REQUIRED',
-                        'message' => '需要管理員驗證',
-                    ],
-                ], 401);
-            }
-            
-            // 否則重導向到登入頁面
+        if (!Auth::check()) {
             return redirect()->route('admin.login')
-                ->with('error', '請先登入以存取管理介面');
+                ->with('error', '請先登入');
         }
 
-        // 檢查使用者是否有管理員權限
-        $user = auth()->user();
-        if (!$user->hasRole('admin')) {
-            // 如果是 API 請求，返回 JSON 錯誤
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'error' => [
-                        'code' => 'PERMISSION_DENIED',
-                        'message' => '權限不足，需要管理員權限',
-                    ],
-                ], 403);
-            }
-            
-            // 否則重導向到首頁
-            return redirect()->route('home')
-                ->with('error', '權限不足，無法存取管理介面');
+        // 檢查使用者是否為管理員
+        $user = Auth::user();
+        if (!$user->isAdmin()) {
+            Auth::logout();
+            return redirect()->route('admin.login')
+                ->with('error', '您沒有權限存取管理後台');
         }
 
         return $next($request);

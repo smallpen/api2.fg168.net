@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\DashboardController;
 
 /*
@@ -14,19 +15,37 @@ use App\Http\Controllers\Admin\DashboardController;
 */
 
 // Admin 登入路由（不需要驗證）
-Route::get('/login', function () {
-    return view('admin.login');
-})->name('admin.login');
+Route::get('/login', [AuthController::class, 'showLoginForm'])
+    ->name('admin.login');
 
-Route::post('/login', function () {
-    // TODO: 實作登入邏輯
-})->name('admin.login.post');
+Route::post('/login', [AuthController::class, 'login'])
+    ->name('admin.login.post');
 
-Route::post('/logout', function () {
-    auth()->logout();
-    return redirect()->route('admin.login')
-        ->with('success', '已成功登出');
-})->name('admin.logout');
+Route::post('/logout', [AuthController::class, 'logout'])
+    ->name('admin.logout');
+
+// 測試認證頁面（開發用）
+Route::get('/test-auth', function () {
+    return view('admin.test-auth');
+})->middleware(['auth.admin'])->name('admin.test-auth');
+
+// API 認證狀態檢查端點（開發用）
+Route::get('/api/auth-status', function () {
+    return response()->json([
+        'authenticated' => Auth::check(),
+        'user' => Auth::user() ? [
+            'id' => Auth::user()->id,
+            'name' => Auth::user()->name,
+            'email' => Auth::user()->email,
+            'is_admin' => Auth::user()->isAdmin(),
+        ] : null,
+        'session_id' => session()->getId(),
+        'guards' => [
+            'web' => Auth::guard('web')->check(),
+            'sanctum' => Auth::guard('sanctum')->check(),
+        ],
+    ]);
+})->middleware(['auth.admin'])->name('admin.api.auth-status');
 
 // 需要管理員驗證的路由
 Route::middleware(['auth.admin'])->group(function () {

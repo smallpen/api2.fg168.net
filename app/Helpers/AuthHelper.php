@@ -18,7 +18,14 @@ class AuthHelper
      */
     public static function getAuthenticatedClient(?Request $request = null): ?ApiClient
     {
-        $request = $request ?? request();
+        // 如果沒有提供請求物件，嘗試從容器中取得
+        if ($request === null) {
+            // 檢查應用程式是否已啟動
+            if (!app()->bound('request')) {
+                return null;
+            }
+            $request = request();
+        }
 
         // 從請求屬性中取得
         $client = $request->attributes->get('api_client');

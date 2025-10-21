@@ -560,7 +560,6 @@ class ClientController extends Controller
             ], 500);
         }
     }
-}
 
     /**
      * 取得客戶端的權限列表

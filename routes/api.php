@@ -62,6 +62,21 @@ Route::prefix('v1')->group(function () {
 */
 
 Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
+    // 測試認證端點（開發用）
+    Route::get('/test-auth', function () {
+        return response()->json([
+            'success' => true,
+            'message' => 'API 認證成功',
+            'user' => Auth::user() ? [
+                'id' => Auth::user()->id,
+                'name' => Auth::user()->name,
+                'email' => Auth::user()->email,
+                'is_admin' => Auth::user()->isAdmin(),
+            ] : null,
+            'guard' => 'sanctum',
+        ]);
+    })->name('api.admin.test-auth');
+
     // API Function 管理
     Route::prefix('functions')->group(function () {
         Route::get('/', [App\Http\Controllers\Admin\FunctionController::class, 'index'])

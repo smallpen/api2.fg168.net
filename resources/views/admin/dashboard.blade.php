@@ -7,6 +7,16 @@
     <title>{{ config('app.name', 'Dynamic API Manager') }} - 管理介面</title>
     
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        #app {
+            min-height: 100vh;
+        }
+    </style>
 </head>
 <body>
     <div id="app"></div>
