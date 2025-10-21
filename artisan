@@ -1,0 +1,49 @@
+#!/usr/bin/env php
+<?php
+
+define('LARAVEL_START', microtime(true));
+
+/*
+|--------------------------------------------------------------------------
+| Register The Auto Loader
+|--------------------------------------------------------------------------
+|
+| Composer 提供了一個方便的自動載入器，可以自動載入我們的類別。
+| 我們只需要使用它！我們只需要引入檔案，然後就可以開始使用類別了。
+|
+*/
+
+require __DIR__.'/vendor/autoload.php';
+
+$app = require_once __DIR__.'/bootstrap/app.php';
+
+/*
+|--------------------------------------------------------------------------
+| Run The Artisan Application
+|--------------------------------------------------------------------------
+|
+| 當我們執行控制台應用程式時，當前的 CLI 命令將被執行，
+| 回應將被發送回終端並顯示給開發者。
+|
+*/
+
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+
+$status = $kernel->handle(
+    $input = new Symfony\Component\Console\Input\ArgvInput,
+    new Symfony\Component\Console\Output\ConsoleOutput
+);
+
+/*
+|--------------------------------------------------------------------------
+| Shutdown The Application
+|--------------------------------------------------------------------------
+|
+| 一旦 Artisan 完成運行，我們將觸發 shutdown 方法，
+| 以便任何最終工作都可以完成。
+|
+*/
+
+$kernel->terminate($input, $status);
+
+exit($status);

@@ -1,0 +1,69 @@
+services:
+  # PHP-FPM 測試應用服務
+  app-test:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: api-manager-app-test
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    environment:
+      - APP_ENV=testing
+      - APP_DEBUG=true
+      - DB_HOST=mysql-test
+      - DB_PORT=3306
+      - DB_DATABASE=api_manager_test
+      - DB_USERNAME=test_user
+      - DB_PASSWORD=test_secret
+      - REDIS_HOST=redis-test
+      - REDIS_PORT=6379
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=array
+      - QUEUE_CONNECTION=sync
+    depends_on:
+      mysql-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_started
+    networks:
+      - test-network
+    command: tail -f /dev/null
+
+  # MySQL 測試資料庫
+  mysql-test:
+    image: mysql:8.0
+    container_name: api-manager-mysql-test
+    environment:
+      - MYSQL_ROOT_PASSWORD=test_root_secret
+      - MYSQL_DATABASE=api_manager_test
+      - MYSQL_USER=test_user
+      - MYSQL_PASSWORD=test_secret
+    volumes:
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+    ports:
+      - "3307:3306"
+    networks:
+      - test-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ptest_root_secret"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Redis 測試快取服務
+  redis-test:
+    image: redis:7-alpine
+    container_name: api-manager-redis-test
+    ports:
+      - "6380:6379"
+    networks:
+      - test-network
+    command: redis-server --appendonly no
+
+networks:
+  test-network:
+    driver: bridge

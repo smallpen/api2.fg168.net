@@ -1,0 +1,24 @@
+#!/bin/sh
+# PHP-FPM 健康檢查腳本
+
+# 檢查 PHP-FPM 進程是否運行
+if ! pgrep -x php-fpm > /dev/null; then
+    echo "PHP-FPM 進程未運行"
+    exit 1
+fi
+
+# 檢查 PHP-FPM 狀態頁面（如果配置了）
+if command -v cgi-fcgi > /dev/null; then
+    SCRIPT_NAME=/ping \
+    SCRIPT_FILENAME=/ping \
+    REQUEST_METHOD=GET \
+    cgi-fcgi -bind -connect 127.0.0.1:9000 > /dev/null 2>&1
+    
+    if [ $? -ne 0 ]; then
+        echo "PHP-FPM 狀態檢查失敗"
+        exit 1
+    fi
+fi
+
+echo "PHP-FPM 健康檢查通過"
+exit 0
