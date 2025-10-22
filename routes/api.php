@@ -133,6 +133,14 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
             ->name('admin.roles.permissions.update');
     });
 
+    // Stored Procedures 管理
+    Route::prefix('stored-procedures')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\StoredProcedureController::class, 'index'])
+            ->name('admin.stored-procedures.index');
+        Route::get('/{procedureName}/parameters', [App\Http\Controllers\Admin\StoredProcedureController::class, 'parameters'])
+            ->name('admin.stored-procedures.parameters');
+    });
+
     // 日誌查詢
     Route::prefix('logs')->group(function () {
         // API 請求日誌

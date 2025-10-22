@@ -211,6 +211,8 @@
 </template>
 
 <script>
+import { confirmWarning } from '../utils/sweetalert';
+
 export default {
   name: 'ResponseMapper',
   props: {
@@ -230,12 +232,20 @@ export default {
       localErrorMappings: [],
       nextResponseId: 1,
       nextErrorId: 1,
+      isInternalResponseUpdate: false,
+      isInternalErrorUpdate: false,
     };
   },
   watch: {
     responses: {
       immediate: true,
       handler(newValue) {
+        // 如果是內部更新觸發的，跳過
+        if (this.isInternalResponseUpdate) {
+          this.isInternalResponseUpdate = false;
+          return;
+        }
+        
         if (newValue && newValue.length > 0) {
           this.localResponses = newValue.map(resp => ({
             ...resp,
@@ -249,6 +259,12 @@ export default {
     errorMappings: {
       immediate: true,
       handler(newValue) {
+        // 如果是內部更新觸發的，跳過
+        if (this.isInternalErrorUpdate) {
+          this.isInternalErrorUpdate = false;
+          return;
+        }
+        
         if (newValue && newValue.length > 0) {
           this.localErrorMappings = newValue.map(err => ({
             ...err,
@@ -296,8 +312,15 @@ export default {
     /**
      * 移除欄位映射
      */
-    removeField(index) {
-      if (confirm('確定要刪除此欄位映射嗎？')) {
+    async removeField(index) {
+      const confirmed = await confirmWarning(
+        '刪除欄位映射',
+        '確定要刪除此欄位映射嗎？',
+        '刪除',
+        '取消'
+      );
+      
+      if (confirmed) {
         this.localResponses.splice(index, 1);
         this.emitResponseChange();
       }
@@ -319,8 +342,15 @@ export default {
     /**
      * 移除錯誤映射
      */
-    removeError(index) {
-      if (confirm('確定要刪除此錯誤映射嗎？')) {
+    async removeError(index) {
+      const confirmed = await confirmWarning(
+        '刪除錯誤映射',
+        '確定要刪除此錯誤映射嗎？',
+        '刪除',
+        '取消'
+      );
+      
+      if (confirmed) {
         this.localErrorMappings.splice(index, 1);
         this.emitErrorChange();
       }
@@ -330,6 +360,7 @@ export default {
      * 發送回應變更事件
      */
     emitResponseChange() {
+      this.isInternalResponseUpdate = true;
       const cleaned = this.localResponses.map(({ _id, ...rest }) => rest);
       this.$emit('update:responses', cleaned);
     },
@@ -338,6 +369,7 @@ export default {
      * 發送錯誤映射變更事件
      */
     emitErrorChange() {
+      this.isInternalErrorUpdate = true;
       const cleaned = this.localErrorMappings.map(({ _id, ...rest }) => rest);
       this.$emit('update:errorMappings', cleaned);
     },

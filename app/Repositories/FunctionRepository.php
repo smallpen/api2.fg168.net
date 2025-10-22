@@ -80,6 +80,9 @@ class FunctionRepository extends BaseRepository
     {
         $query = $this->model->newQuery();
 
+        // 載入參數數量
+        $query->withCount('parameters');
+
         // 套用篩選條件
         if (isset($filters['is_active'])) {
             $query->where('is_active', $filters['is_active']);

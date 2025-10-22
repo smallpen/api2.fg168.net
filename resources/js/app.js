@@ -1,6 +1,7 @@
 import { createApp } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import axios from 'axios';
+import 'sweetalert2/dist/sweetalert2.min.css';
 
 // 導入根元件
 import App from './App.vue';

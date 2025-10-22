@@ -19,7 +19,7 @@
     <!-- 搜尋和篩選區 -->
     <div class="filter-section">
       <div class="filter-row">
-        <div class="filter-item">
+        <div class="filter-item filter-search">
           <input
             v-model="filters.search"
             type="text"
@@ -29,7 +29,7 @@
           />
         </div>
         
-        <div class="filter-item">
+        <div class="filter-item filter-select-item">
           <select v-model="filters.client_type" @change="loadClients" class="filter-select">
             <option value="">全部類型</option>
             <option value="api_key">API Key</option>
@@ -38,7 +38,7 @@
           </select>
         </div>
 
-        <div class="filter-item">
+        <div class="filter-item filter-select-item">
           <select v-model="filters.is_active" @change="loadClients" class="filter-select">
             <option value="">全部狀態</option>
             <option value="1">已啟用</option>
@@ -46,8 +46,11 @@
           </select>
         </div>
 
-        <div class="filter-item">
+        <div class="filter-item filter-button">
           <button @click="resetFilters" class="btn btn-secondary">
+            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
             重置篩選
           </button>
         </div>
@@ -140,8 +143,30 @@
             <td class="actions-column">
               <div class="action-buttons">
                 <button
+                  @click="editClient(client)"
+                  class="btn-action btn-action-primary"
+                  title="編輯"
+                >
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  <span class="btn-text">編輯</span>
+                </button>
+                
+                <button
+                  @click="showRegenerateMenu(client)"
+                  class="btn-action btn-action-info"
+                  title="重新生成憑證"
+                >
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span class="btn-text">重新生成</span>
+                </button>
+                
+                <button
                   @click="toggleStatus(client)"
-                  :class="['btn-icon-action', client.is_active ? 'btn-warning' : 'btn-success']"
+                  :class="['btn-action', client.is_active ? 'btn-action-warning' : 'btn-action-success']"
                   :title="client.is_active ? '停用' : '啟用'"
                 >
                   <svg v-if="client.is_active" class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,36 +176,18 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                </button>
-                
-                <button
-                  @click="showRegenerateMenu(client)"
-                  class="btn-icon-action btn-info"
-                  title="重新生成憑證"
-                >
-                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </button>
-                
-                <button
-                  @click="editClient(client)"
-                  class="btn-icon-action btn-primary"
-                  title="編輯"
-                >
-                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
+                  <span class="btn-text">{{ client.is_active ? '停用' : '啟用' }}</span>
                 </button>
                 
                 <button
                   @click="revokeClient(client)"
-                  class="btn-icon-action btn-danger"
+                  class="btn-action btn-action-danger"
                   title="撤銷"
                 >
                   <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                   </svg>
+                  <span class="btn-text">撤銷</span>
                 </button>
               </div>
             </td>
@@ -333,6 +340,8 @@
 </template>
 
 <script>
+import { confirm, confirmWarning, error as showError, toast, select } from '../utils/sweetalert';
+
 export default {
   name: 'ClientManager',
   data() {
@@ -496,7 +505,7 @@ export default {
         }
       } catch (err) {
         console.error('創建客戶端失敗:', err);
-        alert(err.response?.data?.error?.message || '創建客戶端失敗，請稍後再試');
+        showError('創建失敗', err.response?.data?.error?.message || '創建客戶端失敗，請稍後再試');
       } finally {
         this.creating = false;
       }
@@ -508,7 +517,14 @@ export default {
     async toggleStatus(client) {
       const action = client.is_active ? '停用' : '啟用';
       
-      if (!confirm(`確定要${action} "${client.name}" 嗎？`)) {
+      const confirmed = await confirmWarning(
+        `${action}客戶端`,
+        `確定要${action} "${client.name}" 嗎？`,
+        action,
+        '取消'
+      );
+      
+      if (!confirmed) {
         return;
       }
 
@@ -517,26 +533,30 @@ export default {
 
         if (response.data.success) {
           client.is_active = response.data.data.is_active;
-          this.$emit('show-toast', {
-            type: 'success',
-            message: response.data.message,
-          });
+          toast(response.data.message, 'success');
         }
       } catch (err) {
         console.error('切換狀態失敗:', err);
-        alert(err.response?.data?.error?.message || '切換狀態失敗，請稍後再試');
+        showError('操作失敗', err.response?.data?.error?.message || '切換狀態失敗，請稍後再試');
       }
     },
 
     /**
      * 顯示重新生成選單
      */
-    showRegenerateMenu(client) {
-      const choice = confirm('選擇要重新生成的憑證：\n\n確定 = 重新生成 API Key\n取消 = 重新生成 Secret');
+    async showRegenerateMenu(client) {
+      const choice = await select(
+        '重新生成憑證',
+        '請選擇要重新生成的憑證類型',
+        [
+          { value: 'api_key', text: 'API Key' },
+          { value: 'secret', text: 'Secret' }
+        ]
+      );
       
-      if (choice) {
+      if (choice === 'api_key') {
         this.regenerateApiKey(client);
-      } else {
+      } else if (choice === 'secret') {
         this.regenerateSecret(client);
       }
     },
@@ -545,7 +565,14 @@ export default {
      * 重新生成 API Key
      */
     async regenerateApiKey(client) {
-      if (!confirm(`確定要重新生成 "${client.name}" 的 API Key 嗎？舊的 API Key 將立即失效。`)) {
+      const confirmed = await confirmWarning(
+        '重新生成 API Key',
+        `確定要重新生成 "${client.name}" 的 API Key 嗎？舊的 API Key 將立即失效。`,
+        '重新生成',
+        '取消'
+      );
+      
+      if (!confirmed) {
         return;
       }
 
@@ -559,15 +586,11 @@ export default {
             secret: '',
           };
           this.showCredentialsModal = true;
-          
-          this.$emit('show-toast', {
-            type: 'success',
-            message: response.data.message,
-          });
+          toast(response.data.message, 'success');
         }
       } catch (err) {
         console.error('重新生成 API Key 失敗:', err);
-        alert(err.response?.data?.error?.message || '重新生成 API Key 失敗，請稍後再試');
+        showError('操作失敗', err.response?.data?.error?.message || '重新生成 API Key 失敗，請稍後再試');
       }
     },
 
@@ -575,7 +598,14 @@ export default {
      * 重新生成 Secret
      */
     async regenerateSecret(client) {
-      if (!confirm(`確定要重新生成 "${client.name}" 的 Secret 嗎？舊的 Secret 將立即失效。`)) {
+      const confirmed = await confirmWarning(
+        '重新生成 Secret',
+        `確定要重新生成 "${client.name}" 的 Secret 嗎？舊的 Secret 將立即失效。`,
+        '重新生成',
+        '取消'
+      );
+      
+      if (!confirmed) {
         return;
       }
 
@@ -588,15 +618,11 @@ export default {
             secret: response.data.data.secret,
           };
           this.showCredentialsModal = true;
-          
-          this.$emit('show-toast', {
-            type: 'success',
-            message: response.data.message,
-          });
+          toast(response.data.message, 'success');
         }
       } catch (err) {
         console.error('重新生成 Secret 失敗:', err);
-        alert(err.response?.data?.error?.message || '重新生成 Secret 失敗，請稍後再試');
+        showError('操作失敗', err.response?.data?.error?.message || '重新生成 Secret 失敗，請稍後再試');
       }
     },
 
@@ -605,14 +631,21 @@ export default {
      */
     editClient(client) {
       // TODO: 實作編輯功能
-      alert('編輯功能開發中');
+      toast('編輯功能開發中', 'info');
     },
 
     /**
      * 撤銷客戶端
      */
     async revokeClient(client) {
-      if (!confirm(`確定要撤銷 "${client.name}" 嗎？此操作將停用客戶端並撤銷所有 Token。`)) {
+      const confirmed = await confirmWarning(
+        '撤銷客戶端',
+        `確定要撤銷 "${client.name}" 嗎？此操作將停用客戶端並撤銷所有 Token。`,
+        '撤銷',
+        '取消'
+      );
+      
+      if (!confirmed) {
         return;
       }
 
@@ -620,15 +653,12 @@ export default {
         const response = await this.$axios.post(`/api/admin/clients/${client.id}/revoke`);
 
         if (response.data.success) {
-          this.$emit('show-toast', {
-            type: 'success',
-            message: response.data.message,
-          });
+          toast(response.data.message, 'success');
           this.loadClients();
         }
       } catch (err) {
         console.error('撤銷客戶端失敗:', err);
-        alert(err.response?.data?.error?.message || '撤銷客戶端失敗，請稍後再試');
+        showError('操作失敗', err.response?.data?.error?.message || '撤銷客戶端失敗，請稍後再試');
       }
     },
 
@@ -638,13 +668,10 @@ export default {
     async copyToClipboard(text) {
       try {
         await navigator.clipboard.writeText(text);
-        this.$emit('show-toast', {
-          type: 'success',
-          message: '已複製到剪貼簿',
-        });
+        toast('已複製到剪貼簿', 'success');
       } catch (err) {
         console.error('複製失敗:', err);
-        alert('複製失敗，請手動複製');
+        showError('複製失敗', '複製失敗，請手動複製');
       }
     },
 
@@ -727,16 +754,25 @@ export default {
 
 .filter-row {
   display: flex;
-  gap: 15px;
+  gap: 12px;
   align-items: center;
 }
 
 .filter-item {
-  flex: 1;
+  flex-shrink: 0;
 }
 
-.filter-item:last-child {
-  flex: 0;
+.filter-search {
+  flex: 1;
+  min-width: 300px;
+}
+
+.filter-select-item {
+  width: 160px;
+}
+
+.filter-button {
+  width: auto;
 }
 
 .search-input,
@@ -828,8 +864,9 @@ export default {
 }
 
 .actions-column {
-  width: 180px;
-  text-align: center;
+  width: 360px;
+  text-align: right;
+  white-space: nowrap;
 }
 
 /* 類型標籤 */
@@ -945,62 +982,110 @@ export default {
 /* 操作按鈕 */
 .action-buttons {
   display: flex;
-  gap: 8px;
-  justify-content: center;
+  gap: 6px;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
 }
 
-.btn-icon-action {
-  padding: 6px;
-  border: none;
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
-  background-color: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
-.btn-icon-action .icon {
-  width: 18px;
-  height: 18px;
+.btn-action .icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
-.btn-icon-action.btn-primary {
+.btn-action .btn-text {
+  display: inline-block;
+}
+
+.btn-action-primary {
   color: #3b82f6;
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
 }
 
-.btn-icon-action.btn-primary:hover {
+.btn-action-primary:hover {
   background-color: #dbeafe;
+  border-color: #93c5fd;
 }
 
-.btn-icon-action.btn-danger {
+.btn-action-danger {
   color: #ef4444;
+  background-color: #fef2f2;
+  border-color: #fecaca;
 }
 
-.btn-icon-action.btn-danger:hover {
+.btn-action-danger:hover {
   background-color: #fee2e2;
+  border-color: #fca5a5;
 }
 
-.btn-icon-action.btn-warning {
+.btn-action-warning {
   color: #f59e0b;
+  background-color: #fffbeb;
+  border-color: #fde68a;
 }
 
-.btn-icon-action.btn-warning:hover {
+.btn-action-warning:hover {
   background-color: #fef3c7;
+  border-color: #fcd34d;
 }
 
-.btn-icon-action.btn-success {
+.btn-action-success {
   color: #10b981;
+  background-color: #f0fdf4;
+  border-color: #bbf7d0;
 }
 
-.btn-icon-action.btn-success:hover {
-  background-color: #d1fae5;
+.btn-action-success:hover {
+  background-color: #dcfce7;
+  border-color: #86efac;
 }
 
-.btn-icon-action.btn-info {
+.btn-action-info {
   color: #8b5cf6;
+  background-color: #faf5ff;
+  border-color: #e9d5ff;
 }
 
-.btn-icon-action.btn-info:hover {
-  background-color: #ede9fe;
+.btn-action-info:hover {
+  background-color: #f3e8ff;
+  border-color: #d8b4fe;
+}
+
+/* 響應式：在極小螢幕上隱藏按鈕文字 */
+@media (max-width: 1024px) {
+  .btn-action .btn-text {
+    display: none;
+  }
+  
+  .btn-action {
+    padding: 6px;
+  }
+  
+  .actions-column {
+    width: 180px;
+  }
+}
+
+/* 確保按鈕文字在正常螢幕上顯示 */
+@media (min-width: 1025px) {
+  .btn-action .btn-text {
+    display: inline-block !important;
+  }
 }
 
 /* 空狀態 */

@@ -172,6 +172,8 @@
 </template>
 
 <script>
+import { confirmWarning } from '../utils/sweetalert';
+
 export default {
   name: 'ParameterBuilder',
   props: {
@@ -184,12 +186,19 @@ export default {
     return {
       parameters: [],
       nextId: 1,
+      isInternalUpdate: false,
     };
   },
   watch: {
     modelValue: {
       immediate: true,
       handler(newValue) {
+        // 如果是內部更新觸發的，跳過
+        if (this.isInternalUpdate) {
+          this.isInternalUpdate = false;
+          return;
+        }
+        
         if (newValue && newValue.length > 0) {
           this.parameters = newValue.map((param, index) => ({
             ...param,
@@ -224,8 +233,15 @@ export default {
     /**
      * 移除參數
      */
-    removeParameter(index) {
-      if (confirm('確定要刪除此參數嗎？')) {
+    async removeParameter(index) {
+      const confirmed = await confirmWarning(
+        '刪除參數',
+        '確定要刪除此參數嗎？',
+        '刪除',
+        '取消'
+      );
+      
+      if (confirmed) {
         this.parameters.splice(index, 1);
         this.updatePositions();
         this.emitChange();
@@ -290,6 +306,7 @@ export default {
      * 發送變更事件
      */
     emitChange() {
+      this.isInternalUpdate = true;
       const cleanedParameters = this.parameters.map(param => {
         const { _id, ...rest } = param;
         return rest;

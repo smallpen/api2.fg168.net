@@ -91,6 +91,8 @@
 </template>
 
 <script>
+import { info, toast } from '../utils/sweetalert';
+
 export default {
   name: 'StoredProcedureSelector',
   props: {
@@ -131,23 +133,16 @@ export default {
       this.error = null;
 
       try {
-        // TODO: 實作從後端 API 載入 SP 列表
-        // const response = await this.$axios.get('/api/admin/stored-procedures');
-        // this.procedures = response.data.data;
-
-        // 暫時使用模擬資料
-        await new Promise(resolve => setTimeout(resolve, 500));
-        this.procedures = [
-          { name: 'sp_GetUserById' },
-          { name: 'sp_CreateUser' },
-          { name: 'sp_UpdateUser' },
-          { name: 'sp_DeleteUser' },
-          { name: 'sp_GetUserList' },
-          { name: 'sp_AuthenticateUser' },
-        ];
+        const response = await this.$axios.get('/api/admin/stored-procedures');
+        
+        if (response.data.success) {
+          this.procedures = response.data.data;
+        } else {
+          this.error = '載入 Stored Procedures 失敗';
+        }
       } catch (err) {
         console.error('載入 Stored Procedures 失敗:', err);
-        this.error = '載入 Stored Procedures 失敗，請稍後再試';
+        this.error = err.response?.data?.error?.message || '載入 Stored Procedures 失敗，請稍後再試';
       } finally {
         this.loading = false;
       }
@@ -176,47 +171,17 @@ export default {
       this.error = null;
 
       try {
-        // TODO: 實作從後端 API 載入 SP 參數
-        // const response = await this.$axios.get(`/api/admin/stored-procedures/${this.selectedProcedure}/parameters`);
-        // this.procedureParams = response.data.data;
-
-        // 暫時使用模擬資料
-        await new Promise(resolve => setTimeout(resolve, 300));
+        const response = await this.$axios.get(`/api/admin/stored-procedures/${this.selectedProcedure}/parameters`);
         
-        // 根據不同的 SP 返回不同的參數
-        const mockParams = {
-          'sp_GetUserById': [
-            { name: '@user_id', data_type: 'INT', direction: 'IN', length: null },
-          ],
-          'sp_CreateUser': [
-            { name: '@username', data_type: 'VARCHAR', direction: 'IN', length: 50 },
-            { name: '@email', data_type: 'VARCHAR', direction: 'IN', length: 100 },
-            { name: '@password', data_type: 'VARCHAR', direction: 'IN', length: 255 },
-            { name: '@created_id', data_type: 'INT', direction: 'OUT', length: null },
-          ],
-          'sp_UpdateUser': [
-            { name: '@user_id', data_type: 'INT', direction: 'IN', length: null },
-            { name: '@username', data_type: 'VARCHAR', direction: 'IN', length: 50 },
-            { name: '@email', data_type: 'VARCHAR', direction: 'IN', length: 100 },
-          ],
-          'sp_DeleteUser': [
-            { name: '@user_id', data_type: 'INT', direction: 'IN', length: null },
-          ],
-          'sp_GetUserList': [
-            { name: '@page', data_type: 'INT', direction: 'IN', length: null },
-            { name: '@per_page', data_type: 'INT', direction: 'IN', length: null },
-            { name: '@search', data_type: 'VARCHAR', direction: 'IN', length: 255 },
-          ],
-          'sp_AuthenticateUser': [
-            { name: '@email', data_type: 'VARCHAR', direction: 'IN', length: 100 },
-            { name: '@password', data_type: 'VARCHAR', direction: 'IN', length: 255 },
-          ],
-        };
-
-        this.procedureParams = mockParams[this.selectedProcedure] || [];
+        if (response.data.success) {
+          this.procedureParams = response.data.data;
+        } else {
+          this.error = '載入 SP 參數失敗';
+          this.procedureParams = [];
+        }
       } catch (err) {
         console.error('載入 SP 參數失敗:', err);
-        this.error = '載入 SP 參數失敗';
+        this.error = err.response?.data?.error?.message || '載入 SP 參數失敗';
         this.procedureParams = [];
       } finally {
         this.loading = false;
@@ -228,7 +193,7 @@ export default {
      */
     autoMapParameters() {
       if (this.procedureParams.length === 0) {
-        alert('沒有可映射的參數');
+        info('無法映射', '沒有可映射的參數');
         return;
       }
 
@@ -238,7 +203,7 @@ export default {
       );
 
       if (inputParams.length === 0) {
-        alert('沒有輸入參數可映射');
+        info('無法映射', '沒有輸入參數可映射');
         return;
       }
 
@@ -279,7 +244,7 @@ export default {
       // 發送自動映射事件
       this.$emit('auto-map', apiParams);
       
-      alert(`已自動映射 ${apiParams.length} 個參數`);
+      toast(`已自動映射 ${apiParams.length} 個參數`, 'success');
     },
   },
 };

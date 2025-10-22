@@ -70,4 +70,11 @@ Route::middleware(['auth.admin'])->group(function () {
     // 日誌查詢路由（預留給後續任務）
     // Route::get('logs', [LogController::class, 'index'])->name('admin.logs.index');
     // Route::get('logs/{id}', [LogController::class, 'show'])->name('admin.logs.show');
+    
+    // 萬用路由：處理所有前端路由（Vue Router）
+    // 這個路由必須放在最後，讓所有未匹配的路由都回傳 dashboard 視圖
+    // 這樣 Vue Router 就能接手處理前端路由（如 /admin/functions, /admin/clients 等）
+    Route::get('/{any}', [DashboardController::class, 'index'])
+        ->where('any', '.*')
+        ->name('admin.spa');
 });

@@ -137,6 +137,7 @@
 import StoredProcedureSelector from '../components/StoredProcedureSelector.vue';
 import ParameterBuilder from '../components/ParameterBuilder.vue';
 import ResponseMapper from '../components/ResponseMapper.vue';
+import { confirmWarning, success, error as showError } from '../utils/sweetalert';
 
 export default {
   name: 'FunctionEditor',
@@ -215,17 +216,17 @@ export default {
     async saveFunction() {
       // 驗證必填欄位
       if (!this.formData.name) {
-        alert('請輸入 Function 名稱');
+        showError('驗證失敗', '請輸入 Function 名稱');
         return;
       }
 
       if (!this.formData.identifier) {
-        alert('請輸入 Function 識別碼');
+        showError('驗證失敗', '請輸入 Function 識別碼');
         return;
       }
 
       if (!this.formData.stored_procedure) {
-        alert('請選擇 Stored Procedure');
+        showError('驗證失敗', '請選擇 Stored Procedure');
         return;
       }
 
@@ -243,7 +244,7 @@ export default {
         }
 
         if (response.data.success) {
-          alert(response.data.message || '儲存成功');
+          await success('儲存成功', response.data.message || '已成功儲存 Function 配置');
           this.$router.push({ name: 'functions' });
         }
       } catch (err) {
@@ -252,9 +253,9 @@ export default {
         if (err.response?.data?.error?.code === 'VALIDATION_ERROR') {
           const errors = err.response.data.error.details;
           const errorMessages = Object.values(errors).flat().join('\n');
-          alert(`驗證失敗:\n${errorMessages}`);
+          showError('驗證失敗', errorMessages);
         } else {
-          alert(err.response?.data?.error?.message || '儲存失敗，請稍後再試');
+          showError('儲存失敗', err.response?.data?.error?.message || '儲存失敗，請稍後再試');
         }
       } finally {
         this.saving = false;
@@ -271,8 +272,15 @@ export default {
     /**
      * 返回列表頁
      */
-    goBack() {
-      if (confirm('確定要離開嗎？未儲存的變更將會遺失。')) {
+    async goBack() {
+      const confirmed = await confirmWarning(
+        '確定要離開？',
+        '未儲存的變更將會遺失',
+        '離開',
+        '取消'
+      );
+      
+      if (confirmed) {
         this.$router.push({ name: 'functions' });
       }
     },

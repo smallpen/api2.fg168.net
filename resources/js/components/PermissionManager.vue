@@ -266,6 +266,8 @@
 </template>
 
 <script>
+import { confirmWarning, error as showError, toast } from '../utils/sweetalert';
+
 export default {
   name: 'PermissionManager',
   data() {
@@ -410,7 +412,7 @@ export default {
         }
       } catch (err) {
         console.error('載入客戶端權限失敗:', err);
-        alert('載入客戶端權限失敗，請稍後再試');
+        showError('載入失敗', '載入客戶端權限失敗，請稍後再試');
       } finally {
         this.loadingPermissions = false;
       }
@@ -435,14 +437,11 @@ export default {
         );
         
         if (response.data.success) {
-          this.$emit('show-toast', {
-            type: 'success',
-            message: '客戶端權限已更新',
-          });
+          toast('客戶端權限已更新', 'success');
         }
       } catch (err) {
         console.error('儲存客戶端權限失敗:', err);
-        alert(err.response?.data?.error?.message || '儲存客戶端權限失敗，請稍後再試');
+        showError('儲存失敗', err.response?.data?.error?.message || '儲存客戶端權限失敗，請稍後再試');
       } finally {
         this.saving = false;
       }
@@ -501,7 +500,7 @@ export default {
         }
       } catch (err) {
         console.error('載入角色權限失敗:', err);
-        alert('載入角色權限失敗，請稍後再試');
+        showError('載入失敗', '載入角色權限失敗，請稍後再試');
       }
     },
 
@@ -524,14 +523,11 @@ export default {
         );
         
         if (response.data.success) {
-          this.$emit('show-toast', {
-            type: 'success',
-            message: '角色權限已更新',
-          });
+          toast('角色權限已更新', 'success');
         }
       } catch (err) {
         console.error('儲存角色權限失敗:', err);
-        alert(err.response?.data?.error?.message || '儲存角色權限失敗，請稍後再試');
+        showError('儲存失敗', err.response?.data?.error?.message || '儲存角色權限失敗，請稍後再試');
       } finally {
         this.saving = false;
       }
@@ -550,15 +546,11 @@ export default {
           this.showCreateRoleModal = false;
           this.newRole = { name: '', description: '' };
           this.loadRoles();
-          
-          this.$emit('show-toast', {
-            type: 'success',
-            message: '角色創建成功',
-          });
+          toast('角色創建成功', 'success');
         }
       } catch (err) {
         console.error('創建角色失敗:', err);
-        alert(err.response?.data?.error?.message || '創建角色失敗，請稍後再試');
+        showError('創建失敗', err.response?.data?.error?.message || '創建角色失敗，請稍後再試');
       } finally {
         this.creating = false;
       }
@@ -568,7 +560,14 @@ export default {
      * 刪除角色
      */
     async deleteRole(role) {
-      if (!confirm(`確定要刪除角色 "${role.name}" 嗎？`)) {
+      const confirmed = await confirmWarning(
+        '刪除角色',
+        `確定要刪除角色 "${role.name}" 嗎？`,
+        '刪除',
+        '取消'
+      );
+      
+      if (!confirmed) {
         return;
       }
       
@@ -582,15 +581,11 @@ export default {
           }
           
           this.loadRoles();
-          
-          this.$emit('show-toast', {
-            type: 'success',
-            message: '角色已刪除',
-          });
+          toast('角色已刪除', 'success');
         }
       } catch (err) {
         console.error('刪除角色失敗:', err);
-        alert(err.response?.data?.error?.message || '刪除角色失敗，請稍後再試');
+        showError('刪除失敗', err.response?.data?.error?.message || '刪除角色失敗，請稍後再試');
       }
     },
 
