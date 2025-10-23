@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Repositories\ClientRepository;
+use App\Services\Logging\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use App\Models\ApiClient;
 
 /**
@@ -24,11 +26,19 @@ class ClientController extends Controller
     protected $clientRepository;
 
     /**
+     * @var AuditLogger
+     */
+    protected $auditLogger;
+
+    /**
      * ClientController constructor
      */
-    public function __construct(ClientRepository $clientRepository)
-    {
+    public function __construct(
+        ClientRepository $clientRepository,
+        AuditLogger $auditLogger
+    ) {
         $this->clientRepository = $clientRepository;
+        $this->auditLogger = $auditLogger;
     }
 
     /**
@@ -57,7 +67,38 @@ class ClientController extends Controller
                 $filters['search'] = $request->input('search');
             }
 
-            $clients = $this->clientRepository->paginate($perPage, $filters);
+            // 處理軟刪除篩選
+            $showDeleted = $request->input('show_deleted', 'active');
+            
+            $query = ApiClient::query();
+            
+            // 根據 show_deleted 參數決定查詢範圍
+            if ($showDeleted === 'deleted') {
+                $query->onlyTrashed();
+            } elseif ($showDeleted === 'all') {
+                $query->withTrashed();
+            }
+            // 預設 'active' 不需要額外處理，會自動排除已刪除的記錄
+            
+            // 套用其他篩選條件
+            if (isset($filters['is_active'])) {
+                $query->where('is_active', $filters['is_active']);
+            }
+            
+            if (isset($filters['client_type'])) {
+                $query->where('client_type', $filters['client_type']);
+            }
+            
+            if (isset($filters['search'])) {
+                $search = $filters['search'];
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('api_key', 'like', "%{$search}%");
+                });
+            }
+            
+            // 載入關聯並分頁
+            $clients = $query->with('roles')->paginate($perPage);
 
             return response()->json([
                 'success' => true,
@@ -148,13 +189,12 @@ class ClientController extends Controller
             'rate_limit' => 'nullable|integer|min:1',
             'token_expires_at' => 'nullable|date',
             'is_active' => 'boolean',
-            'roles' => 'nullable|array',
-            'roles.*' => 'integer|exists:roles,id',
+            'client_role_id' => 'nullable|exists:client_roles,id',
         ], [
             'name.required' => '客戶端名稱為必填',
             'client_type.required' => '客戶端類型為必填',
             'client_type.in' => '客戶端類型必須為 api_key、bearer_token 或 oauth',
-            'roles.*.exists' => '指定的角色不存在',
+            'client_role_id.exists' => '指定的角色不存在',
         ]);
 
         if ($validator->fails()) {
@@ -179,6 +219,22 @@ class ClientController extends Controller
             $client->update([
                 'secret' => bcrypt($plainSecret),
             ]);
+
+            // 指派客戶端角色（只能有一個）
+            if (!empty($request->input('client_role_id'))) {
+                $client->syncClientRoles([$request->input('client_role_id')]);
+            }
+
+            // 記錄審計日誌
+            $this->auditLogger->logCreate(
+                Auth::id(),
+                AuditLogger::RESOURCE_API_CLIENT,
+                $client->id,
+                [
+                    'name' => $client->name,
+                    'client_type' => $client->client_type,
+                ]
+            );
 
             DB::commit();
 
@@ -233,8 +289,9 @@ class ClientController extends Controller
             'rate_limit' => 'nullable|integer|min:1',
             'token_expires_at' => 'nullable|date',
             'is_active' => 'boolean',
-            'roles' => 'nullable|array',
-            'roles.*' => 'integer|exists:roles,id',
+            'client_role_id' => 'nullable|exists:client_roles,id',
+        ], [
+            'client_role_id.exists' => '指定的角色不存在',
         ]);
 
         if ($validator->fails()) {
@@ -250,24 +307,56 @@ class ClientController extends Controller
 
         try {
             // 檢查客戶端是否存在
-            $this->clientRepository->findOrFail($id);
+            $client = $this->clientRepository->findOrFail($id);
+
+            // 保存舊資料用於審計日誌
+            $oldData = [
+                'name' => $client->name,
+                'rate_limit' => $client->rate_limit,
+                'is_active' => $client->is_active,
+            ];
 
             DB::beginTransaction();
 
             // 更新客戶端
-            $client = $this->clientRepository->updateClient($id, $request->all());
+            $updatedClient = $this->clientRepository->updateClient($id, $request->all());
+
+            // 更新客戶端角色（只能有一個）
+            if ($request->has('client_role_id')) {
+                $roleId = $request->input('client_role_id');
+                if ($roleId && $roleId !== '' && $roleId !== 'null') {
+                    $updatedClient->syncClientRoles([(int)$roleId]);
+                } else {
+                    $updatedClient->syncClientRoles([]);
+                }
+            }
+
+            // 記錄審計日誌
+            $newData = [
+                'name' => $updatedClient->name,
+                'rate_limit' => $updatedClient->rate_limit,
+                'is_active' => $updatedClient->is_active,
+            ];
+            
+            $this->auditLogger->logUpdate(
+                Auth::id(),
+                AuditLogger::RESOURCE_API_CLIENT,
+                $id,
+                $oldData,
+                $newData
+            );
 
             DB::commit();
 
             Log::info('API 客戶端更新成功', [
                 'client_id' => $id,
-                'name' => $client->name,
+                'name' => $updatedClient->name,
                 'updated_by' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => true,
-                'data' => $client,
+                'data' => $updatedClient->load('roles'),
                 'message' => '客戶端更新成功',
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -556,6 +645,113 @@ class ClientController extends Controller
                 'error' => [
                     'code' => 'INTERNAL_ERROR',
                     'message' => '撤銷客戶端失敗',
+                ],
+            ], 500);
+        }
+    }
+
+    /**
+     * 恢復已刪除的客戶端
+     * 
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function restore(int $id): JsonResponse
+    {
+        try {
+            $client = ApiClient::onlyTrashed()->findOrFail($id);
+            
+            $client->restore();
+
+            Log::info('API 客戶端恢復', [
+                'client_id' => $id,
+                'name' => $client->name,
+                'restored_by' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => '客戶端已恢復',
+                'data' => $client->fresh(),
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'CLIENT_NOT_FOUND',
+                    'message' => '找不到指定的已刪除客戶端',
+                ],
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('恢復客戶端失敗', [
+                'client_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'INTERNAL_ERROR',
+                    'message' => '恢復客戶端失敗',
+                ],
+            ], 500);
+        }
+    }
+
+    /**
+     * 永久刪除客戶端
+     * 
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function forceDelete(int $id): JsonResponse
+    {
+        try {
+            $client = ApiClient::onlyTrashed()->findOrFail($id);
+            
+            DB::beginTransaction();
+
+            // 刪除相關資料
+            $client->tokens()->forceDelete();
+            $client->clientRoles()->detach();
+            $client->functionPermissions()->forceDelete();
+            
+            // 永久刪除客戶端
+            $client->forceDelete();
+
+            DB::commit();
+
+            Log::info('API 客戶端永久刪除', [
+                'client_id' => $id,
+                'name' => $client->name,
+                'force_deleted_by' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => '客戶端已永久刪除',
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'CLIENT_NOT_FOUND',
+                    'message' => '找不到指定的已刪除客戶端',
+                ],
+            ], 404);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('永久刪除客戶端失敗', [
+                'client_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'INTERNAL_ERROR',
+                    'message' => '永久刪除客戶端失敗',
                 ],
             ], 500);
         }

@@ -149,6 +149,11 @@ export const select = async (title, text, options) => {
     return result.isConfirmed ? result.value : null;
 };
 
+// 別名函數，方便使用
+export const showConfirm = confirmWarning;
+export const showSuccess = success;
+export const showError = error;
+
 export default {
     confirm,
     confirmWarning,
@@ -157,4 +162,7 @@ export default {
     info,
     toast,
     select,
+    showConfirm,
+    showSuccess,
+    showError,
 };

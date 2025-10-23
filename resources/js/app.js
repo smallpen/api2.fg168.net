@@ -13,6 +13,8 @@ import FunctionList from './pages/FunctionList.vue';
 import FunctionEditor from './pages/FunctionEditor.vue';
 import LogViewer from './pages/LogViewer.vue';
 import ClientManager from './pages/ClientManager.vue';
+import UserManager from './pages/UserManager.vue';
+import PermissionManager from './components/PermissionManager.vue';
 
 // 配置 Axios
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
@@ -72,6 +74,16 @@ const router = createRouter({
                     path: 'clients',
                     name: 'clients',
                     component: ClientManager,
+                },
+                {
+                    path: 'users',
+                    name: 'users',
+                    component: UserManager,
+                },
+                {
+                    path: 'permissions',
+                    name: 'permissions',
+                    component: PermissionManager,
                 },
             ],
         },

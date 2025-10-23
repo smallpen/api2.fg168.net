@@ -17,10 +17,16 @@
         客戶端權限
       </button>
       <button
-        :class="['tab-btn', { active: activeTab === 'role' }]"
-        @click="activeTab = 'role'"
+        :class="['tab-btn', { active: activeTab === 'client-role' }]"
+        @click="activeTab = 'client-role'"
       >
-        角色管理
+        客戶端角色
+      </button>
+      <button
+        :class="['tab-btn', { active: activeTab === 'admin-role' }]"
+        @click="activeTab = 'admin-role'"
+      >
+        後台角色
       </button>
     </div>
 
@@ -112,8 +118,8 @@
       </div>
     </div>
 
-    <!-- 角色管理標籤頁 -->
-    <div v-if="activeTab === 'role'" class="tab-content">
+    <!-- 客戶端角色管理標籤頁 -->
+    <div v-if="activeTab === 'client-role'" class="tab-content">
       <!-- 角色列表 -->
       <div class="roles-section">
         <div class="section-header">
@@ -138,19 +144,31 @@
             @click="selectRole(role.id)"
           >
             <div class="role-header">
-              <h4>{{ role.name }}</h4>
-              <button
-                v-if="!isSystemRole(role.name)"
-                @click.stop="deleteRole(role)"
-                class="btn-icon-action btn-danger"
-                title="刪除角色"
-              >
-                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
+              <h4>{{ role.display_name || role.name }}</h4>
+              <div class="role-actions">
+                <button
+                  @click.stop="showEditRoleModal(role)"
+                  class="btn-icon-action btn-edit"
+                  title="編輯角色"
+                >
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button
+                  v-if="!isSystemRole(role.name)"
+                  @click.stop="deleteRole(role)"
+                  class="btn-icon-action btn-danger"
+                  title="刪除角色"
+                >
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
             </div>
             <p class="role-description">{{ role.description }}</p>
+            <p class="role-name-hint">識別碼：{{ role.name }}</p>
             <div class="role-stats">
               <span class="stat">
                 <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,11 +245,119 @@
       </div>
     </div>
 
+    <!-- 後台角色管理標籤頁 -->
+    <div v-if="activeTab === 'admin-role'" class="tab-content">
+      <!-- 後台角色列表 -->
+      <div class="roles-section">
+        <div class="section-header">
+          <h3>後台管理角色</h3>
+          <p class="section-description">管理後台管理員可以使用哪些後台功能</p>
+        </div>
+
+        <!-- 載入中 -->
+        <div v-if="loadingRoles" class="loading-container">
+          <div class="spinner"></div>
+          <p>載入角色資料中...</p>
+        </div>
+
+        <!-- 後台角色卡片 -->
+        <div v-else class="roles-grid">
+          <div
+            v-for="role in adminRoles"
+            :key="role.id"
+            :class="['role-card', { selected: selectedAdminRoleId === role.id }]"
+            @click="selectAdminRole(role.id)"
+          >
+            <div class="role-header">
+              <h4>{{ role.display_name || role.name }}</h4>
+              <div class="role-actions">
+                <button
+                  @click.stop="showEditAdminRoleModal(role)"
+                  class="btn-icon-action btn-edit"
+                  title="編輯角色"
+                >
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <span v-if="role.name === 'super_admin'" class="system-badge">系統角色</span>
+              </div>
+            </div>
+            <p class="role-description">{{ role.description }}</p>
+            <p class="role-name-hint">識別碼：{{ role.name }}</p>
+            <div class="role-stats">
+              <span class="stat">
+                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                {{ role.users_count || 0 }} 使用者
+              </span>
+              <span class="stat">
+                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                {{ role.permissions_count || 0 }} 權限
+              </span>
+            </div>
+          </div>
+
+          <div v-if="adminRoles.length === 0" class="empty-state">
+            <p>尚無後台角色</p>
+          </div>
+        </div>
+
+        <!-- 後台角色權限配置 -->
+        <div v-if="selectedAdminRoleId" class="role-permissions-section">
+          <div class="section-header">
+            <h3>後台功能權限配置</h3>
+            <button @click="saveAdminRolePermissions" class="btn btn-sm btn-primary" :disabled="saving">
+              {{ saving ? '儲存中...' : '儲存變更' }}
+            </button>
+          </div>
+
+          <!-- 權限列表 -->
+          <div class="permissions-list">
+            <div
+              v-for="permission in adminPermissions"
+              :key="permission.id"
+              class="permission-item"
+            >
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  :value="permission.id"
+                  v-model="adminRolePermissions[permission.id]"
+                  class="checkbox"
+                  :disabled="isAdminRoleSuperAdmin"
+                />
+                <div class="permission-details">
+                  <strong>{{ permission.display_name }}</strong>
+                  <span class="description">{{ permission.description }}</span>
+                  <code class="identifier">{{ permission.name }}</code>
+                </div>
+              </label>
+            </div>
+
+            <div v-if="adminPermissions.length === 0" class="empty-state">
+              <p>找不到後台權限</p>
+            </div>
+          </div>
+
+          <div v-if="isAdminRoleSuperAdmin" class="alert alert-info">
+            <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>超級管理員擁有所有權限，無法修改</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 創建角色 Modal -->
     <div v-if="showCreateRoleModal" class="modal-overlay" @click.self="showCreateRoleModal = false">
       <div class="modal-content">
         <div class="modal-header">
-          <h2>新增角色</h2>
+          <h2>新增客戶端角色</h2>
           <button @click="showCreateRoleModal = false" class="btn-close">
             <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -241,13 +367,19 @@
         <div class="modal-body">
           <form @submit.prevent="createRole">
             <div class="form-group">
-              <label>角色名稱 *</label>
-              <input v-model="newRole.name" type="text" class="form-input" required />
+              <label>角色名稱（英文識別碼）*</label>
+              <input v-model="newRole.name" type="text" class="form-input" required placeholder="例如：premium_partner" />
+              <small class="form-hint">只能使用小寫英文字母、數字和底線</small>
+            </div>
+
+            <div class="form-group">
+              <label>顯示名稱 *</label>
+              <input v-model="newRole.display_name" type="text" class="form-input" required placeholder="例如：高級合作夥伴" />
             </div>
 
             <div class="form-group">
               <label>角色描述</label>
-              <textarea v-model="newRole.description" class="form-input" rows="3"></textarea>
+              <textarea v-model="newRole.description" class="form-input" rows="3" placeholder="描述此角色的用途和權限範圍"></textarea>
             </div>
 
             <div class="modal-footer">
@@ -256,6 +388,106 @@
               </button>
               <button type="submit" class="btn btn-primary" :disabled="creating">
                 {{ creating ? '建立中...' : '建立角色' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 編輯客戶端角色 Modal -->
+    <div v-if="showEditRoleModalFlag" class="modal-overlay" @click.self="closeEditRoleModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>編輯客戶端角色</h2>
+          <button @click="closeEditRoleModal" class="btn-close">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="updateRole">
+            <div class="form-group">
+              <label>角色名稱（英文識別碼）*</label>
+              <input 
+                v-model="editingRole.name" 
+                type="text" 
+                class="form-input" 
+                required 
+                :disabled="isSystemRole(editingRole.name)"
+                placeholder="例如：premium_partner" 
+              />
+              <small v-if="isSystemRole(editingRole.name)" class="form-hint">系統角色的識別碼不可修改</small>
+              <small v-else class="form-hint">只能使用小寫英文字母、數字和底線</small>
+            </div>
+
+            <div class="form-group">
+              <label>顯示名稱 *</label>
+              <input v-model="editingRole.display_name" type="text" class="form-input" required placeholder="例如：高級合作夥伴" />
+            </div>
+
+            <div class="form-group">
+              <label>角色描述</label>
+              <textarea v-model="editingRole.description" class="form-input" rows="3" placeholder="描述此角色的用途和權限範圍"></textarea>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" @click="closeEditRoleModal" class="btn btn-secondary">
+                取消
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="updating">
+                {{ updating ? '更新中...' : '更新角色' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 編輯後台角色 Modal -->
+    <div v-if="showEditAdminRoleModalFlag" class="modal-overlay" @click.self="closeEditAdminRoleModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>編輯後台角色</h2>
+          <button @click="closeEditAdminRoleModal" class="btn-close">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="updateAdminRole">
+            <div class="form-group">
+              <label>角色名稱（英文識別碼）*</label>
+              <input 
+                v-model="editingAdminRole.name" 
+                type="text" 
+                class="form-input" 
+                required 
+                :disabled="isAdminSystemRole(editingAdminRole.name)"
+                placeholder="例如：content_manager" 
+              />
+              <small v-if="isAdminSystemRole(editingAdminRole.name)" class="form-hint">系統角色的識別碼不可修改</small>
+              <small v-else class="form-hint">只能使用小寫英文字母、數字和底線</small>
+            </div>
+
+            <div class="form-group">
+              <label>顯示名稱 *</label>
+              <input v-model="editingAdminRole.display_name" type="text" class="form-input" required placeholder="例如：內容管理員" />
+            </div>
+
+            <div class="form-group">
+              <label>角色描述</label>
+              <textarea v-model="editingAdminRole.description" class="form-input" rows="3" placeholder="描述此角色的用途和權限範圍"></textarea>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" @click="closeEditAdminRoleModal" class="btn btn-secondary">
+                取消
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="updatingAdmin">
+                {{ updatingAdmin ? '更新中...' : '更新角色' }}
               </button>
             </div>
           </form>
@@ -279,15 +511,23 @@ export default {
       selectedClientId: '',
       clientPermissions: {},
       
-      // 角色相關
+      // 客戶端角色相關
       roles: [],
       selectedRoleId: null,
       rolePermissions: {},
+      
+      // 後台角色相關
+      adminRoles: [],
+      selectedAdminRoleId: null,
+      adminRolePermissions: {},
       
       // Functions
       functions: [],
       functionSearch: '',
       roleFunctionSearch: '',
+      
+      // 後台權限
+      adminPermissions: [],
       
       // 狀態
       loadingPermissions: false,
@@ -296,9 +536,26 @@ export default {
       
       // Modal
       showCreateRoleModal: false,
+      showEditRoleModalFlag: false,
+      showEditAdminRoleModalFlag: false,
       creating: false,
+      updating: false,
+      updatingAdmin: false,
       newRole: {
         name: '',
+        display_name: '',
+        description: '',
+      },
+      editingRole: {
+        id: null,
+        name: '',
+        display_name: '',
+        description: '',
+      },
+      editingAdminRole: {
+        id: null,
+        name: '',
+        display_name: '',
         description: '',
       },
     };
@@ -325,11 +582,19 @@ export default {
         (func.description && func.description.toLowerCase().includes(search))
       );
     },
+    
+    isAdminRoleSuperAdmin() {
+      if (!this.selectedAdminRoleId) return false;
+      const role = this.adminRoles.find(r => r.id === this.selectedAdminRoleId);
+      return role && role.name === 'super_admin';
+    },
   },
   mounted() {
     this.loadClients();
     this.loadFunctions();
     this.loadRoles();
+    this.loadAdminRoles();
+    this.loadAdminPermissions();
   },
   methods: {
     /**
@@ -544,7 +809,7 @@ export default {
         
         if (response.data.success) {
           this.showCreateRoleModal = false;
-          this.newRole = { name: '', description: '' };
+          this.newRole = { name: '', display_name: '', description: '' };
           this.loadRoles();
           toast('角色創建成功', 'success');
         }
@@ -553,6 +818,58 @@ export default {
         showError('創建失敗', err.response?.data?.error?.message || '創建角色失敗，請稍後再試');
       } finally {
         this.creating = false;
+      }
+    },
+
+    /**
+     * 顯示編輯角色 Modal
+     */
+    showEditRoleModal(role) {
+      this.editingRole = {
+        id: role.id,
+        name: role.name,
+        display_name: role.display_name,
+        description: role.description || '',
+      };
+      this.showEditRoleModalFlag = true;
+    },
+
+    /**
+     * 關閉編輯角色 Modal
+     */
+    closeEditRoleModal() {
+      this.showEditRoleModalFlag = false;
+      this.editingRole = {
+        id: null,
+        name: '',
+        display_name: '',
+        description: '',
+      };
+    },
+
+    /**
+     * 更新角色
+     */
+    async updateRole() {
+      this.updating = true;
+      
+      try {
+        const response = await this.$axios.put(`/api/admin/roles/${this.editingRole.id}`, {
+          name: this.editingRole.name,
+          display_name: this.editingRole.display_name,
+          description: this.editingRole.description,
+        });
+        
+        if (response.data.success) {
+          this.closeEditRoleModal();
+          this.loadRoles();
+          toast('角色更新成功', 'success');
+        }
+      } catch (err) {
+        console.error('更新角色失敗:', err);
+        showError('更新失敗', err.response?.data?.error?.message || '更新角色失敗，請稍後再試');
+      } finally {
+        this.updating = false;
       }
     },
 
@@ -590,10 +907,175 @@ export default {
     },
 
     /**
-     * 檢查是否為系統角色
+     * 檢查是否為系統角色（客戶端角色）
      */
     isSystemRole(name) {
-      return ['admin', 'user', 'guest'].includes(name.toLowerCase());
+      return ['internal', 'partner', 'test'].includes(name.toLowerCase());
+    },
+
+    /**
+     * 檢查是否為系統角色（後台角色）
+     */
+    isAdminSystemRole(name) {
+      return ['super_admin'].includes(name.toLowerCase());
+    },
+
+    /**
+     * 載入後台角色列表
+     */
+    async loadAdminRoles() {
+      this.loadingRoles = true;
+      
+      try {
+        const response = await this.$axios.get('/api/admin/admin-roles');
+        
+        if (response.data.success) {
+          this.adminRoles = response.data.data;
+        }
+      } catch (err) {
+        console.error('載入後台角色列表失敗:', err);
+        showError('載入失敗', '載入後台角色列表失敗');
+      } finally {
+        this.loadingRoles = false;
+      }
+    },
+
+    /**
+     * 載入後台權限列表
+     */
+    async loadAdminPermissions() {
+      try {
+        const response = await this.$axios.get('/api/admin/admin-permissions');
+        
+        if (response.data.success) {
+          this.adminPermissions = response.data.data;
+        }
+      } catch (err) {
+        console.error('載入後台權限列表失敗:', err);
+      }
+    },
+
+    /**
+     * 選擇後台角色
+     */
+    async selectAdminRole(roleId) {
+      this.selectedAdminRoleId = roleId;
+      await this.loadAdminRolePermissions();
+    },
+
+    /**
+     * 載入後台角色權限
+     */
+    async loadAdminRolePermissions() {
+      if (!this.selectedAdminRoleId) return;
+      
+      try {
+        const response = await this.$axios.get(`/api/admin/admin-roles/${this.selectedAdminRoleId}/permissions`);
+        
+        if (response.data.success) {
+          // 初始化所有權限為 false
+          this.adminRolePermissions = {};
+          this.adminPermissions.forEach(perm => {
+            this.adminRolePermissions[perm.id] = false;
+          });
+          
+          // 設定已授權的權限
+          response.data.data.forEach(permission => {
+            this.adminRolePermissions[permission.id] = true;
+          });
+        }
+      } catch (err) {
+        console.error('載入後台角色權限失敗:', err);
+        showError('載入失敗', '載入後台角色權限失敗');
+      }
+    },
+
+    /**
+     * 儲存後台角色權限
+     */
+    async saveAdminRolePermissions() {
+      if (!this.selectedAdminRoleId) return;
+      
+      // 超級管理員的權限不可修改
+      if (this.isAdminRoleSuperAdmin) {
+        showError('無法修改', '超級管理員的權限不可修改');
+        return;
+      }
+      
+      this.saving = true;
+      
+      try {
+        const permissions = Object.keys(this.adminRolePermissions)
+          .filter(permId => this.adminRolePermissions[permId])
+          .map(permId => parseInt(permId));
+        
+        const response = await this.$axios.post(
+          `/api/admin/admin-roles/${this.selectedAdminRoleId}/permissions`,
+          { permission_ids: permissions }
+        );
+        
+        if (response.data.success) {
+          toast('後台角色權限已更新', 'success');
+          this.loadAdminRoles(); // 重新載入以更新權限數量
+        }
+      } catch (err) {
+        console.error('儲存後台角色權限失敗:', err);
+        showError('儲存失敗', err.response?.data?.message || '儲存後台角色權限失敗');
+      } finally {
+        this.saving = false;
+      }
+    },
+
+    /**
+     * 顯示編輯後台角色 Modal
+     */
+    showEditAdminRoleModal(role) {
+      this.editingAdminRole = {
+        id: role.id,
+        name: role.name,
+        display_name: role.display_name,
+        description: role.description || '',
+      };
+      this.showEditAdminRoleModalFlag = true;
+    },
+
+    /**
+     * 關閉編輯後台角色 Modal
+     */
+    closeEditAdminRoleModal() {
+      this.showEditAdminRoleModalFlag = false;
+      this.editingAdminRole = {
+        id: null,
+        name: '',
+        display_name: '',
+        description: '',
+      };
+    },
+
+    /**
+     * 更新後台角色
+     */
+    async updateAdminRole() {
+      this.updatingAdmin = true;
+      
+      try {
+        const response = await this.$axios.put(`/api/admin/admin-roles/${this.editingAdminRole.id}`, {
+          name: this.editingAdminRole.name,
+          display_name: this.editingAdminRole.display_name,
+          description: this.editingAdminRole.description,
+        });
+        
+        if (response.data.success) {
+          this.closeEditAdminRoleModal();
+          this.loadAdminRoles();
+          toast('後台角色更新成功', 'success');
+        }
+      } catch (err) {
+        console.error('更新後台角色失敗:', err);
+        showError('更新失敗', err.response?.data?.message || '更新後台角色失敗，請稍後再試');
+      } finally {
+        this.updatingAdmin = false;
+      }
     },
   },
 };
@@ -919,12 +1401,105 @@ export default {
   font-size: 16px;
   font-weight: 600;
   color: #111827;
+  flex: 1;
+}
+
+.role-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
 
 .role-description {
   font-size: 13px;
   color: #6b7280;
+  margin: 0 0 10px 0;
+}
+
+.role-name-hint {
+  font-size: 11px;
+  color: #9ca3af;
   margin: 0 0 15px 0;
+  font-family: 'Courier New', monospace;
+}
+
+.form-hint {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.section-description {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 5px 0 0 0;
+}
+
+.system-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  background-color: #fef3c7;
+  color: #92400e;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.permissions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.permission-item {
+  padding: 15px;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s;
+}
+
+.permission-item:last-child {
+  border-bottom: none;
+}
+
+.permission-item:hover {
+  background-color: #f9fafb;
+}
+
+.permission-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.permission-details strong {
+  font-size: 14px;
+  color: #111827;
+}
+
+.alert {
+  padding: 12px 15px;
+  border-radius: 6px;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.alert-info {
+  background-color: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.alert-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .role-stats {
@@ -994,6 +1569,139 @@ export default {
 }
 
 .btn-icon-action {
+  padding: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon-action .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-icon-action.btn-edit {
+  color: #3b82f6;
+}
+
+.btn-icon-action.btn-edit:hover {
+  background-color: #eff6ff;
+}
+
+.btn-icon-action.btn-danger {
+  color: #ef4444;
+}
+
+.btn-icon-action.btn-danger:hover {
+  background-color: #fef2f2;
+}
+
+/* Modal 樣式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.btn-close {
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.btn-close:hover {
+  color: #111827;
+}
+
+.btn-close .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* 表單樣式 */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.btn-icon-action-old {
   padding: 6px;
   border: none;
   border-radius: 6px;

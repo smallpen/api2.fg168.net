@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 /**
@@ -15,7 +16,7 @@ use Illuminate\Support\Str;
  */
 class ApiClient extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'api_clients';
 
@@ -63,10 +64,18 @@ class ApiClient extends Model
     /**
      * 取得此客戶端的角色
      */
+    public function clientRoles(): BelongsToMany
+    {
+        return $this->belongsToMany(ClientRole::class, 'api_client_roles', 'client_id', 'client_role_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * 向後相容的 roles 方法（別名）
+     */
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(Role::class, 'client_roles', 'client_id', 'role_id')
-            ->withTimestamps();
+        return $this->clientRoles();
     }
 
     /**
@@ -140,9 +149,17 @@ class ApiClient extends Model
     /**
      * 檢查客戶端是否有指定角色
      */
+    public function hasClientRole(string $roleName): bool
+    {
+        return $this->clientRoles()->where('name', $roleName)->exists();
+    }
+
+    /**
+     * 向後相容的 hasRole 方法（別名）
+     */
     public function hasRole(string $roleName): bool
     {
-        return $this->roles()->where('name', $roleName)->exists();
+        return $this->hasClientRole($roleName);
     }
 
     /**
@@ -168,13 +185,53 @@ class ApiClient extends Model
      */
     protected function hasPermissionThroughRole(int $functionId): bool
     {
-        foreach ($this->roles as $role) {
+        foreach ($this->clientRoles as $role) {
             if ($role->canAccessFunction($functionId)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * 為客戶端指派角色
+     */
+    public function assignClientRole($role): void
+    {
+        if (is_string($role)) {
+            $role = ClientRole::findByName($role);
+            if (!$role) {
+                throw new \InvalidArgumentException("角色 '{$role}' 不存在");
+            }
+        }
+
+        if (!$this->clientRoles()->where('client_roles.id', $role->id)->exists()) {
+            $this->clientRoles()->attach($role->id);
+        }
+    }
+
+    /**
+     * 移除客戶端的角色
+     */
+    public function removeClientRole($role): void
+    {
+        if (is_string($role)) {
+            $role = ClientRole::findByName($role);
+            if (!$role) {
+                return;
+            }
+        }
+
+        $this->clientRoles()->detach($role->id);
+    }
+
+    /**
+     * 同步客戶端的所有角色
+     */
+    public function syncClientRoles(array $roleIds): void
+    {
+        $this->clientRoles()->sync($roleIds);
     }
 
     /**

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Role;
+use App\Models\ClientRole;
 use App\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -12,21 +12,21 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * 角色管理控制器
+ * 客戶端角色管理控制器
  * 
- * 提供角色的 CRUD 操作和權限管理介面
+ * 提供客戶端角色的 CRUD 操作和權限管理介面
  */
 class RoleController extends Controller
 {
     /**
-     * 取得角色列表
+     * 取得客戶端角色列表
      * 
      * @return JsonResponse
      */
     public function index(): JsonResponse
     {
         try {
-            $roles = Role::withCount(['clients', 'permissions'])->get();
+            $roles = ClientRole::withCount(['clients', 'permissions'])->get();
 
             return response()->json([
                 'success' => true,
@@ -56,11 +56,13 @@ class RoleController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255|unique:roles,name',
+            'name' => 'required|string|max:255|unique:client_roles,name',
+            'display_name' => 'required|string|max:255',
             'description' => 'nullable|string',
         ], [
             'name.required' => '角色名稱為必填',
             'name.unique' => '角色名稱已存在',
+            'display_name.required' => '顯示名稱為必填',
         ]);
 
         if ($validator->fails()) {
@@ -75,7 +77,7 @@ class RoleController extends Controller
         }
 
         try {
-            $role = Role::create($request->all());
+            $role = ClientRole::create($request->all());
 
             Log::info('角色創建成功', [
                 'role_id' => $role->id,
@@ -104,6 +106,87 @@ class RoleController extends Controller
     }
 
     /**
+     * 更新角色
+     * 
+     * @param Request $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => ['sometimes', 'required', 'string', 'max:255', 'unique:client_roles,name,' . $id],
+            'display_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+        ], [
+            'name.required' => '角色名稱為必填',
+            'name.unique' => '角色名稱已存在',
+            'display_name.required' => '顯示名稱為必填',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'message' => '參數驗證失敗',
+                    'details' => $validator->errors(),
+                ],
+            ], 400);
+        }
+
+        try {
+            $role = ClientRole::findOrFail($id);
+
+            // 系統角色的 name 不可修改
+            if ($role->isSystemRole() && $request->has('name') && $request->input('name') !== $role->name) {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'SYSTEM_ROLE',
+                        'message' => '系統角色的識別碼不可修改',
+                    ],
+                ], 403);
+            }
+
+            $role->update($request->only(['name', 'display_name', 'description']));
+
+            Log::info('角色更新成功', [
+                'role_id' => $role->id,
+                'name' => $role->name,
+                'updated_by' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $role,
+                'message' => '角色更新成功',
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'ROLE_NOT_FOUND',
+                    'message' => '找不到指定的角色',
+                ],
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('更新角色失敗', [
+                'role_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'INTERNAL_ERROR',
+                    'message' => '更新角色失敗',
+                ],
+            ], 500);
+        }
+    }
+
+    /**
      * 刪除角色
      * 
      * @param int $id
@@ -112,10 +195,10 @@ class RoleController extends Controller
     public function destroy(int $id): JsonResponse
     {
         try {
-            $role = Role::findOrFail($id);
+            $role = ClientRole::findOrFail($id);
 
             // 防止刪除系統角色
-            if (in_array($role->name, [Role::ROLE_ADMIN, Role::ROLE_USER, Role::ROLE_GUEST])) {
+            if ($role->isSystemRole()) {
                 return response()->json([
                     'success' => false,
                     'error' => [
@@ -179,7 +262,7 @@ class RoleController extends Controller
     public function getPermissions(int $id): JsonResponse
     {
         try {
-            $role = Role::findOrFail($id);
+            $role = ClientRole::findOrFail($id);
             $permissions = $role->permissions;
 
             return response()->json([
@@ -239,7 +322,7 @@ class RoleController extends Controller
         }
 
         try {
-            $role = Role::findOrFail($id);
+            $role = ClientRole::findOrFail($id);
 
             DB::beginTransaction();
 

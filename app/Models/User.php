@@ -58,23 +58,25 @@ class User extends Authenticatable
     }
 
     /**
-     * 取得使用者的角色
+     * 取得使用者的後台管理角色
+     * 
+     * 注意：雖然資料庫結構支援多角色，但系統限制每個使用者只能有一個後台角色
      */
-    public function roles()
+    public function adminRoles()
     {
-        return $this->belongsToMany(Role::class, 'user_roles', 'user_id', 'role_id')
+        return $this->belongsToMany(AdminRole::class, 'user_admin_roles', 'user_id', 'admin_role_id')
             ->withTimestamps();
     }
 
     /**
-     * 檢查使用者是否擁有指定角色
+     * 檢查使用者是否擁有指定的後台角色
      *
      * @param string $roleName 角色名稱
      * @return bool
      */
-    public function hasRole(string $roleName): bool
+    public function hasAdminRole(string $roleName): bool
     {
-        return $this->roles()->where('name', $roleName)->exists();
+        return $this->adminRoles()->where('name', $roleName)->exists();
     }
 
     /**
@@ -84,55 +86,131 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return $this->hasRole(Role::ROLE_ADMIN);
+        return $this->hasAdminRole(AdminRole::ROLE_SUPER_ADMIN);
     }
 
     /**
-     * 為使用者指派角色
+     * 檢查使用者是否有指定的後台權限
      *
-     * @param Role|string $role 角色物件或角色名稱
+     * @param string $permissionName 權限名稱
+     * @return bool
+     */
+    public function hasAdminPermission(string $permissionName): bool
+    {
+        // 超級管理員擁有所有權限
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        // 檢查使用者的角色是否有此權限
+        foreach ($this->adminRoles as $role) {
+            if ($role->hasPermission($permissionName)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 檢查使用者是否可以管理 API Functions
+     *
+     * @return bool
+     */
+    public function canManageFunctions(): bool
+    {
+        return $this->hasAdminPermission(AdminPermission::PERM_MANAGE_FUNCTIONS);
+    }
+
+    /**
+     * 檢查使用者是否可以管理客戶端
+     *
+     * @return bool
+     */
+    public function canManageClients(): bool
+    {
+        return $this->hasAdminPermission(AdminPermission::PERM_MANAGE_CLIENTS);
+    }
+
+    /**
+     * 檢查使用者是否可以管理系統帳號
+     *
+     * @return bool
+     */
+    public function canManageUsers(): bool
+    {
+        return $this->hasAdminPermission(AdminPermission::PERM_MANAGE_USERS);
+    }
+
+    /**
+     * 檢查使用者是否可以管理權限
+     *
+     * @return bool
+     */
+    public function canManagePermissions(): bool
+    {
+        return $this->hasAdminPermission(AdminPermission::PERM_MANAGE_PERMISSIONS);
+    }
+
+    /**
+     * 檢查使用者是否可以查看日誌
+     *
+     * @return bool
+     */
+    public function canViewLogs(): bool
+    {
+        return $this->hasAdminPermission(AdminPermission::PERM_VIEW_LOGS);
+    }
+
+    /**
+     * 為使用者指派後台角色
+     *
+     * @param AdminRole|string $role 角色物件或角色名稱
      * @return void
      */
-    public function assignRole($role): void
+    public function assignAdminRole($role): void
     {
         if (is_string($role)) {
-            $role = Role::findByName($role);
+            $role = AdminRole::findByName($role);
             if (!$role) {
                 throw new \InvalidArgumentException("角色 '{$role}' 不存在");
             }
         }
 
-        if (!$this->roles()->where('roles.id', $role->id)->exists()) {
-            $this->roles()->attach($role->id);
+        if (!$this->adminRoles()->where('admin_roles.id', $role->id)->exists()) {
+            $this->adminRoles()->attach($role->id);
         }
     }
 
     /**
-     * 移除使用者的角色
+     * 移除使用者的後台角色
      *
-     * @param Role|string $role 角色物件或角色名稱
+     * @param AdminRole|string $role 角色物件或角色名稱
      * @return void
      */
-    public function removeRole($role): void
+    public function removeAdminRole($role): void
     {
         if (is_string($role)) {
-            $role = Role::findByName($role);
+            $role = AdminRole::findByName($role);
             if (!$role) {
                 return;
             }
         }
 
-        $this->roles()->detach($role->id);
+        $this->adminRoles()->detach($role->id);
     }
 
     /**
-     * 同步使用者的所有角色
+     * 同步使用者的所有後台角色
+     * 
+     * 注意：系統限制每個使用者只能有一個後台角色，
+     * 傳入的陣列應該只包含一個角色 ID
      *
-     * @param array $roleIds 角色 ID 陣列
+     * @param array $roleIds 角色 ID 陣列（應只包含一個 ID）
      * @return void
      */
-    public function syncRoles(array $roleIds): void
+    public function syncAdminRoles(array $roleIds): void
     {
-        $this->roles()->sync($roleIds);
+        $this->adminRoles()->sync($roleIds);
     }
 }

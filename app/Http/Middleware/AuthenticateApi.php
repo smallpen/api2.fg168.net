@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Services\Authentication\AuthenticationManager;
 use App\Services\Authentication\AuthenticationException;
+use App\Services\Logging\SecurityLogger;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,11 +22,19 @@ class AuthenticateApi
     protected AuthenticationManager $authManager;
 
     /**
+     * 安全日誌記錄器
+     */
+    protected SecurityLogger $securityLogger;
+
+    /**
      * 建構函數
      */
-    public function __construct(AuthenticationManager $authManager)
-    {
+    public function __construct(
+        AuthenticationManager $authManager,
+        SecurityLogger $securityLogger
+    ) {
         $this->authManager = $authManager;
+        $this->securityLogger = $securityLogger;
     }
 
     /**
@@ -91,8 +100,16 @@ class AuthenticateApi
      */
     protected function logAuthenticationSuccess(Request $request, $client): void
     {
-        // 可以在這裡記錄驗證成功的日誌
-        // 例如：Log::info('Authentication successful', ['client_id' => $client->id]);
+        // 記錄驗證成功的安全日誌
+        $this->securityLogger->logAuthenticationSuccess(
+            $client->id,
+            $request->ip(),
+            [
+                'user_agent' => $request->userAgent(),
+                'path' => $request->path(),
+                'method' => $request->method(),
+            ]
+        );
     }
 
     /**
@@ -104,15 +121,17 @@ class AuthenticateApi
      */
     protected function logAuthenticationFailure(Request $request, AuthenticationException $exception): void
     {
-        // 記錄安全日誌
-        \Log::warning('API Authentication failed', [
-            'error_code' => $exception->getErrorCode(),
-            'message' => $exception->getMessage(),
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'path' => $request->path(),
-            'method' => $request->method(),
-        ]);
+        // 記錄驗證失敗的安全日誌
+        $this->securityLogger->logAuthenticationFailed(
+            $request->ip(),
+            [
+                'error_code' => $exception->getErrorCode(),
+                'message' => $exception->getMessage(),
+                'user_agent' => $request->userAgent(),
+                'path' => $request->path(),
+                'method' => $request->method(),
+            ]
+        );
     }
 
     /**

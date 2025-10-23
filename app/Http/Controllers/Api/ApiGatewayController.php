@@ -90,7 +90,8 @@ class ApiGatewayController extends Controller
     {
         $startTime = microtime(true);
         $requestId = $this->generateRequestId();
-        $clientId = $request->user()?->id ?? null;
+        $client = $request->attributes->get('api_client');
+        $clientId = $client?->id ?? null;
         $functionId = null;
         $functionIdentifier = null;
         $params = [];
@@ -348,7 +349,7 @@ class ApiGatewayController extends Controller
     }
 
     /**
-     * 記錄 API 請求（非同步）
+     * 記錄 API 請求
      * 
      * @param int|null $clientId 客戶端 ID
      * @param int|null $functionId Function ID
@@ -368,33 +369,24 @@ class ApiGatewayController extends Controller
         float $executionTime,
         Request $request
     ): void {
-        // 使用 dispatch 非同步記錄日誌，避免影響回應時間
-        dispatch(function () use (
-            $clientId,
-            $functionId,
-            $requestData,
-            $responseData,
-            $httpStatus,
-            $executionTime,
-            $request
-        ) {
-            try {
-                $this->loggingService->api()->logRequest([
-                    'client_id' => $clientId,
-                    'function_id' => $functionId,
-                    'request_data' => $requestData,
-                    'response_data' => $responseData,
-                    'http_status' => $httpStatus,
-                    'execution_time' => $executionTime,
-                    'ip_address' => $request->ip(),
-                    'user_agent' => $request->userAgent(),
-                ]);
-            } catch (\Exception $e) {
-                // 日誌記錄失敗不應影響主流程
-                Log::error('非同步日誌記錄失敗', [
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        })->afterResponse();
+        // 直接同步記錄日誌
+        try {
+            $this->loggingService->api()->logRequest([
+                'client_id' => $clientId,
+                'function_id' => $functionId,
+                'request_data' => $requestData,
+                'response_data' => $responseData,
+                'http_status' => $httpStatus,
+                'execution_time' => $executionTime,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            // 日誌記錄失敗不應影響主流程
+            Log::error('API 日誌記錄失敗', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
     }
 }

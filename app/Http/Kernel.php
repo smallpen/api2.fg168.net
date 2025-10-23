@@ -67,5 +67,6 @@ class Kernel extends HttpKernel
         'authorize.api' => \App\Http\Middleware\AuthorizeApi::class,
         'throttle.api' => \App\Http\Middleware\ThrottleApi::class,
         'auth.admin' => \App\Http\Middleware\AuthenticateAdmin::class,
+        'check.admin.permission' => \App\Http\Middleware\CheckAdminPermission::class,
     ];
 }

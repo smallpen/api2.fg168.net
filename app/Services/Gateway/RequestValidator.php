@@ -256,9 +256,13 @@ class RequestValidator
         // 可以在這裡加入自訂的驗證規則
         // 例如：跨欄位驗證、複雜的業務邏輯驗證等
 
-        // 範例：加入自訂規則檢查特定條件
-        $validator->sometimes('*', function ($attribute, $value, $fail) use ($function) {
+        // 範例：使用 after 方法加入自訂驗證邏輯
+        $validator->after(function ($validator) use ($function) {
             // 自訂驗證邏輯可以在這裡實作
+            // 例如：
+            // if (某個條件) {
+            //     $validator->errors()->add('field_name', '錯誤訊息');
+            // }
         });
     }
 

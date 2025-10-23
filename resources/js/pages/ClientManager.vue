@@ -46,6 +46,14 @@
           </select>
         </div>
 
+        <div class="filter-item filter-select-item">
+          <select v-model="filters.show_deleted" @change="loadClients" class="filter-select">
+            <option value="active">顯示活躍</option>
+            <option value="all">包含已刪除</option>
+            <option value="deleted">只顯示已刪除</option>
+          </select>
+        </div>
+
         <div class="filter-item filter-button">
           <button @click="resetFilters" class="btn btn-secondary">
             <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,7 +140,7 @@
             <td>
               <div class="roles-cell">
                 <span v-if="client.roles && client.roles.length > 0" class="role-badge" v-for="role in client.roles" :key="role.id">
-                  {{ role.name }}
+                  {{ role.display_name || role.name }}
                 </span>
                 <span v-else class="no-roles">無角色</span>
               </div>
@@ -180,6 +188,7 @@
                 </button>
                 
                 <button
+                  v-if="client.is_active"
                   @click="revokeClient(client)"
                   class="btn-action btn-action-danger"
                   title="撤銷"
@@ -188,6 +197,42 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                   </svg>
                   <span class="btn-text">撤銷</span>
+                </button>
+                
+                <button
+                  v-else-if="!client.deleted_at"
+                  @click="confirmDelete(client)"
+                  class="btn-action btn-action-danger"
+                  title="刪除"
+                >
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  <span class="btn-text">刪除</span>
+                </button>
+                
+                <button
+                  v-if="client.deleted_at"
+                  @click="restoreClient(client)"
+                  class="btn-action btn-action-success"
+                  title="恢復"
+                >
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span class="btn-text">恢復</span>
+                </button>
+                
+                <button
+                  v-if="client.deleted_at"
+                  @click="confirmForceDelete(client)"
+                  class="btn-action btn-action-danger"
+                  title="永久刪除"
+                >
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <span class="btn-text">永久刪除</span>
                 </button>
               </div>
             </td>
@@ -264,6 +309,17 @@
             </div>
 
             <div class="form-group">
+              <label>客戶端角色</label>
+              <select v-model="newClient.client_role_id" class="form-input">
+                <option value="">無角色</option>
+                <option v-for="role in clientRoles" :key="role.id" :value="role.id">
+                  {{ role.display_name || role.name }}
+                </option>
+              </select>
+              <small class="form-hint">選擇客戶端的角色以套用預設權限</small>
+            </div>
+
+            <div class="form-group">
               <label>
                 <input v-model="newClient.is_active" type="checkbox" />
                 啟用客戶端
@@ -276,6 +332,70 @@
               </button>
               <button type="submit" class="btn btn-primary" :disabled="creating">
                 {{ creating ? '建立中...' : '建立客戶端' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 編輯客戶端 Modal -->
+    <div v-if="showEditModal" class="modal-overlay" @click.self="showEditModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>編輯 API 客戶端</h2>
+          <button @click="showEditModal = false" class="btn-close">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="updateClient">
+            <div class="form-group">
+              <label>客戶端名稱 *</label>
+              <input v-model="editingClient.name" type="text" class="form-input" required />
+            </div>
+
+            <div class="form-group">
+              <label>客戶端類型 *</label>
+              <select v-model="editingClient.client_type" class="form-input" required disabled>
+                <option value="api_key">API Key</option>
+                <option value="bearer_token">Bearer Token</option>
+                <option value="oauth">OAuth 2.0</option>
+              </select>
+              <small class="form-hint">客戶端類型建立後無法修改</small>
+            </div>
+
+            <div class="form-group">
+              <label>速率限制（每分鐘請求數）</label>
+              <input v-model.number="editingClient.rate_limit" type="number" class="form-input" min="1" placeholder="60" />
+            </div>
+
+            <div class="form-group">
+              <label>客戶端角色</label>
+              <select v-model="editingClient.client_role_id" class="form-input">
+                <option value="">無角色</option>
+                <option v-for="role in clientRoles" :key="role.id" :value="role.id">
+                  {{ role.display_name || role.name }}
+                </option>
+              </select>
+              <small class="form-hint">選擇客戶端的角色以套用預設權限</small>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input v-model="editingClient.is_active" type="checkbox" />
+                啟用客戶端
+              </label>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" @click="showEditModal = false" class="btn btn-secondary">
+                取消
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="updating">
+                {{ updating ? '更新中...' : '更新客戶端' }}
               </button>
             </div>
           </form>
@@ -353,6 +473,7 @@ export default {
         search: '',
         client_type: '',
         is_active: '',
+        show_deleted: 'active',
       },
       pagination: {
         current_page: 1,
@@ -364,14 +485,26 @@ export default {
       },
       searchTimeout: null,
       showCreateModal: false,
+      showEditModal: false,
       showCredentialsModal: false,
       creating: false,
+      updating: false,
       newClient: {
         name: '',
         client_type: 'api_key',
         rate_limit: 60,
+        client_role_id: null,
         is_active: true,
       },
+      editingClient: {
+        id: null,
+        name: '',
+        client_type: 'api_key',
+        rate_limit: 60,
+        client_role_id: null,
+        is_active: true,
+      },
+      clientRoles: [],
       credentials: {
         api_key: '',
         secret: '',
@@ -394,8 +527,23 @@ export default {
   },
   mounted() {
     this.loadClients();
+    this.loadClientRoles();
   },
   methods: {
+    /**
+     * 載入客戶端角色列表
+     */
+    async loadClientRoles() {
+      try {
+        const response = await this.$axios.get('/api/admin/client-roles');
+        if (response.data.success) {
+          this.clientRoles = response.data.data;
+        }
+      } catch (err) {
+        console.error('載入客戶端角色列表失敗:', err);
+      }
+    },
+
     /**
      * 載入客戶端列表
      */
@@ -419,6 +567,10 @@ export default {
 
         if (this.filters.is_active !== '') {
           params.is_active = this.filters.is_active;
+        }
+
+        if (this.filters.show_deleted) {
+          params.show_deleted = this.filters.show_deleted;
         }
 
         const response = await this.$axios.get('/api/admin/clients', { params });
@@ -463,6 +615,7 @@ export default {
         search: '',
         client_type: '',
         is_active: '',
+        show_deleted: 'active',
       };
       this.pagination.current_page = 1;
       this.loadClients();
@@ -497,6 +650,7 @@ export default {
             name: '',
             client_type: 'api_key',
             rate_limit: 60,
+            client_role_id: null,
             is_active: true,
           };
 
@@ -630,8 +784,55 @@ export default {
      * 編輯客戶端
      */
     editClient(client) {
-      // TODO: 實作編輯功能
-      toast('編輯功能開發中', 'info');
+      this.editingClient = {
+        id: client.id,
+        name: client.name,
+        client_type: client.client_type,
+        rate_limit: client.rate_limit || 60,
+        client_role_id: client.roles && client.roles.length > 0 ? client.roles[0].id : '',
+        is_active: client.is_active,
+      };
+      this.showEditModal = true;
+    },
+
+    /**
+     * 更新客戶端
+     */
+    async updateClient() {
+      this.updating = true;
+
+      try {
+        const data = {
+          name: this.editingClient.name,
+          rate_limit: this.editingClient.rate_limit,
+          is_active: this.editingClient.is_active,
+        };
+        
+        // 只有當 client_role_id 有值時才傳送
+        if (this.editingClient.client_role_id !== '' && this.editingClient.client_role_id !== null) {
+          data.client_role_id = parseInt(this.editingClient.client_role_id);
+        } else {
+          data.client_role_id = null;
+        }
+        
+        const response = await this.$axios.put(
+          `/api/admin/clients/${this.editingClient.id}`,
+          data
+        );
+
+        if (response.data.success) {
+          this.showEditModal = false;
+          toast(response.data.message || '客戶端更新成功', 'success');
+          
+          // 重新載入列表
+          this.loadClients();
+        }
+      } catch (err) {
+        console.error('更新客戶端失敗:', err);
+        showError('更新失敗', err.response?.data?.error?.message || '更新客戶端失敗，請稍後再試');
+      } finally {
+        this.updating = false;
+      }
     },
 
     /**
@@ -659,6 +860,90 @@ export default {
       } catch (err) {
         console.error('撤銷客戶端失敗:', err);
         showError('操作失敗', err.response?.data?.error?.message || '撤銷客戶端失敗，請稍後再試');
+      }
+    },
+
+    /**
+     * 確認刪除客戶端（軟刪除）
+     */
+    async confirmDelete(client) {
+      const confirmed = await confirmWarning(
+        '刪除客戶端',
+        `確定要刪除客戶端「${client.name}」嗎？\n\n此操作將：\n• 將客戶端移至回收站\n• 停用所有功能\n• 可以在 30 天內恢復\n\n提示：如需永久刪除，請先刪除後再從回收站中永久刪除。`,
+        '確定刪除',
+        '取消'
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        const response = await this.$axios.delete(`/api/admin/clients/${client.id}`);
+
+        if (response.data.success) {
+          toast('客戶端已刪除（可恢復）', 'success');
+          this.loadClients();
+        }
+      } catch (err) {
+        console.error('刪除客戶端失敗:', err);
+        showError('刪除失敗', err.response?.data?.error?.message || '刪除客戶端失敗，請稍後再試');
+      }
+    },
+
+    /**
+     * 恢復客戶端
+     */
+    async restoreClient(client) {
+      const confirmed = await confirm(
+        '恢復客戶端',
+        `確定要恢復客戶端「${client.name}」嗎？`,
+        '確定恢復',
+        '取消'
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        const response = await this.$axios.post(`/api/admin/clients/${client.id}/restore`);
+
+        if (response.data.success) {
+          toast('客戶端已恢復', 'success');
+          this.loadClients();
+        }
+      } catch (err) {
+        console.error('恢復客戶端失敗:', err);
+        showError('恢復失敗', err.response?.data?.error?.message || '恢復客戶端失敗，請稍後再試');
+      }
+    },
+
+    /**
+     * 確認永久刪除客戶端
+     */
+    async confirmForceDelete(client) {
+      const confirmed = await confirmWarning(
+        '永久刪除客戶端',
+        `⚠️ 警告：此操作無法恢復！\n\n確定要永久刪除客戶端「${client.name}」嗎？\n\n此操作將：\n• 永久移除客戶端資料\n• 刪除所有相關的 Token 和權限\n• 無法恢復\n\n建議：只有在確定不再需要時才執行此操作。`,
+        '確定永久刪除',
+        '取消'
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        const response = await this.$axios.delete(`/api/admin/clients/${client.id}/force`);
+
+        if (response.data.success) {
+          toast('客戶端已永久刪除', 'success');
+          this.loadClients();
+        }
+      } catch (err) {
+        console.error('永久刪除客戶端失敗:', err);
+        showError('刪除失敗', err.response?.data?.error?.message || '永久刪除客戶端失敗，請稍後再試');
       }
     },
 
@@ -1295,6 +1580,19 @@ export default {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.form-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
 }
 
 /* 警告訊息 */

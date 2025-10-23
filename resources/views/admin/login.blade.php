@@ -151,7 +151,7 @@
 <body>
     <div class="login-container">
         <div class="login-header">
-            <h1 class="login-title">Dynamic API Manager</h1>
+            <h1 class="login-title">會員系統 API 控制台</h1>
             <p class="login-subtitle">管理員登入</p>
         </div>
 

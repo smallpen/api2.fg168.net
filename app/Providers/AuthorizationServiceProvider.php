@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\Authorization\AuthorizationManager;
 use App\Services\Authorization\PermissionChecker;
+use App\Services\Authorization\PermissionCache;
 use App\Services\Authorization\RoleManager;
 use Illuminate\Support\ServiceProvider;
 
@@ -29,11 +30,17 @@ class AuthorizationServiceProvider extends ServiceProvider
             return new RoleManager();
         });
 
+        // 註冊 PermissionCache 為單例
+        $this->app->singleton(PermissionCache::class, function ($app) {
+            return new PermissionCache();
+        });
+
         // 註冊 AuthorizationManager 為單例
         $this->app->singleton(AuthorizationManager::class, function ($app) {
             return new AuthorizationManager(
                 $app->make(PermissionChecker::class),
-                $app->make(RoleManager::class)
+                $app->make(RoleManager::class),
+                $app->make(PermissionCache::class)
             );
         });
     }

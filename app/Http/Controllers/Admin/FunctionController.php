@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Repositories\FunctionRepository;
+use App\Services\Logging\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Function 管理控制器
@@ -23,11 +25,19 @@ class FunctionController extends Controller
     protected $functionRepository;
 
     /**
+     * @var AuditLogger
+     */
+    protected $auditLogger;
+
+    /**
      * FunctionController constructor
      */
-    public function __construct(FunctionRepository $functionRepository)
-    {
+    public function __construct(
+        FunctionRepository $functionRepository,
+        AuditLogger $auditLogger
+    ) {
         $this->functionRepository = $functionRepository;
+        $this->auditLogger = $auditLogger;
     }
 
     /**
@@ -202,6 +212,18 @@ class FunctionController extends Controller
 
             DB::commit();
 
+            // 記錄審計日誌
+            $this->auditLogger->logCreate(
+                Auth::id(),
+                AuditLogger::RESOURCE_API_FUNCTION,
+                $function->id,
+                [
+                    'name' => $function->name,
+                    'identifier' => $function->identifier,
+                    'stored_procedure' => $function->stored_procedure,
+                ]
+            );
+
             Log::info('API Function 創建成功', [
                 'function_id' => $function->id,
                 'identifier' => $function->identifier,
@@ -297,8 +319,32 @@ class FunctionController extends Controller
 
             DB::beginTransaction();
 
+            // 保存舊資料用於審計日誌
+            $oldData = [
+                'name' => $function->name,
+                'identifier' => $function->identifier,
+                'stored_procedure' => $function->stored_procedure,
+                'is_active' => $function->is_active,
+            ];
+
             // 更新 Function 及其相關資料
             $updatedFunction = $this->functionRepository->updateWithRelations($id, $request->all());
+
+            // 記錄審計日誌
+            $newData = [
+                'name' => $updatedFunction->name,
+                'identifier' => $updatedFunction->identifier,
+                'stored_procedure' => $updatedFunction->stored_procedure,
+                'is_active' => $updatedFunction->is_active,
+            ];
+            
+            $this->auditLogger->logUpdate(
+                Auth::id(),
+                AuditLogger::RESOURCE_API_FUNCTION,
+                $id,
+                $oldData,
+                $newData
+            );
 
             DB::commit();
 
@@ -350,6 +396,13 @@ class FunctionController extends Controller
         try {
             $function = $this->functionRepository->findOrFail($id);
             
+            // 保存資料用於審計日誌
+            $deletedData = [
+                'name' => $function->name,
+                'identifier' => $function->identifier,
+                'stored_procedure' => $function->stored_procedure,
+            ];
+            
             DB::beginTransaction();
 
             // 刪除相關資料
@@ -360,6 +413,14 @@ class FunctionController extends Controller
             
             // 刪除 Function
             $this->functionRepository->delete($id);
+
+            // 記錄審計日誌
+            $this->auditLogger->logDelete(
+                Auth::id(),
+                AuditLogger::RESOURCE_API_FUNCTION,
+                $id,
+                $deletedData
+            );
 
             DB::commit();
 
@@ -410,24 +471,40 @@ class FunctionController extends Controller
         try {
             $function = $this->functionRepository->findOrFail($id);
             
+            $newStatus = !$function->is_active;
+            
             if ($function->is_active) {
                 $this->functionRepository->deactivate($id);
                 $message = 'Function 已停用';
+                
+                // 記錄停用審計日誌
+                $this->auditLogger->logDisable(
+                    Auth::id(),
+                    AuditLogger::RESOURCE_API_FUNCTION,
+                    $id
+                );
             } else {
                 $this->functionRepository->activate($id);
                 $message = 'Function 已啟用';
+                
+                // 記錄啟用審計日誌
+                $this->auditLogger->logEnable(
+                    Auth::id(),
+                    AuditLogger::RESOURCE_API_FUNCTION,
+                    $id
+                );
             }
 
             Log::info('API Function 狀態切換', [
                 'function_id' => $id,
-                'new_status' => !$function->is_active,
+                'new_status' => $newStatus,
                 'updated_by' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'is_active' => !$function->is_active,
+                    'is_active' => $newStatus,
                 ],
                 'message' => $message,
             ]);

@@ -6,6 +6,7 @@ use App\Exceptions\AuthorizationException;
 use App\Models\ApiClient;
 use App\Models\ApiFunction;
 use App\Services\Authorization\AuthorizationManager;
+use App\Services\Logging\SecurityLogger;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -24,11 +25,19 @@ class AuthorizeApi
     protected AuthorizationManager $authorizationManager;
 
     /**
+     * 安全日誌記錄器
+     */
+    protected SecurityLogger $securityLogger;
+
+    /**
      * 建構函數
      */
-    public function __construct(AuthorizationManager $authorizationManager)
-    {
+    public function __construct(
+        AuthorizationManager $authorizationManager,
+        SecurityLogger $securityLogger
+    ) {
         $this->authorizationManager = $authorizationManager;
+        $this->securityLogger = $securityLogger;
     }
 
     /**
@@ -136,18 +145,16 @@ class AuthorizeApi
     protected function logSecurityEvent(ApiClient $client, ApiFunction $function, string $eventType): void
     {
         try {
-            // 這裡可以記錄到 security_logs 資料表
-            // 目前先使用 Laravel 的日誌系統
-            Log::channel('security')->warning('安全事件', [
-                'event_type' => $eventType,
-                'client_id' => $client->id,
-                'client_name' => $client->name,
-                'function_id' => $function->id,
-                'function_name' => $function->name,
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-                'timestamp' => now()->toIso8601String(),
-            ]);
+            // 記錄到 security_logs 資料表
+            $this->securityLogger->logPermissionDenied(
+                $client->id,
+                request()->ip(),
+                [
+                    'function_id' => $function->id,
+                    'function_name' => $function->name,
+                    'user_agent' => request()->userAgent(),
+                ]
+            );
         } catch (\Exception $e) {
             Log::error('記錄安全事件失敗', [
                 'error' => $e->getMessage(),

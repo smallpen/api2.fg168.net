@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use App\Models\ErrorLog;
 use Illuminate\Auth\AuthenticationException as LaravelAuthenticationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
@@ -271,9 +272,37 @@ class Handler extends ExceptionHandler
         if ($this->shouldReport($exception)) {
             if ($this->isInternalError($exception)) {
                 Log::error("例外發生: {$exceptionClass}", $context);
+                
+                // 記錄到錯誤日誌資料表
+                $this->logToErrorTable($exception, $context);
             } else {
                 Log::warning("例外發生: {$exceptionClass}", $context);
             }
+        }
+    }
+
+    /**
+     * 記錄錯誤到資料表
+     *
+     * @param Throwable $exception
+     * @param array $context
+     * @return void
+     */
+    protected function logToErrorTable(Throwable $exception, array $context): void
+    {
+        try {
+            ErrorLog::create([
+                'type' => get_class($exception),
+                'message' => $exception->getMessage(),
+                'stack_trace' => $exception->getTraceAsString(),
+                'context' => $context,
+            ]);
+        } catch (\Exception $e) {
+            // 如果記錄到資料表失敗，只記錄到系統日誌
+            Log::error('無法記錄錯誤到資料表', [
+                'error' => $e->getMessage(),
+                'original_exception' => get_class($exception),
+            ]);
         }
     }
 

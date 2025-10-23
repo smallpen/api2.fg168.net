@@ -254,16 +254,19 @@
             </template>
 
             <td class="actions-column">
-              <button
-                @click="viewDetail(log)"
-                class="btn-icon-action btn-primary"
-                title="查看詳情"
-              >
-                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              </button>
+              <div class="action-buttons">
+                <button
+                  @click="viewDetail(log)"
+                  class="btn-action btn-action-primary"
+                  title="查看詳情"
+                >
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span class="btn-text">查看詳情</span>
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -1039,8 +1042,9 @@ export default {
 }
 
 .actions-column {
-  width: 80px;
-  text-align: center;
+  width: 140px;
+  text-align: right;
+  white-space: nowrap;
 }
 
 /* 程式碼樣式 */
@@ -1154,26 +1158,68 @@ export default {
 }
 
 /* 操作按鈕 */
-.btn-icon-action {
-  padding: 6px;
-  border: none;
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+}
+
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
-  background-color: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
-.btn-icon-action .icon {
-  width: 18px;
-  height: 18px;
+.btn-action .icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
-.btn-icon-action.btn-primary {
+.btn-action .btn-text {
+  display: inline-block;
+}
+
+.btn-action-primary {
   color: #3b82f6;
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
 }
 
-.btn-icon-action.btn-primary:hover {
+.btn-action-primary:hover {
   background-color: #dbeafe;
+  border-color: #93c5fd;
+}
+
+/* 響應式：在極小螢幕上隱藏按鈕文字 */
+@media (max-width: 1024px) {
+  .btn-action .btn-text {
+    display: none;
+  }
+  
+  .btn-action {
+    padding: 6px;
+  }
+  
+  .actions-column {
+    width: 60px;
+  }
+}
+
+/* 確保按鈕文字在正常螢幕上顯示 */
+@media (min-width: 1025px) {
+  .btn-action .btn-text {
+    display: inline-block !important;
+  }
 }
 
 /* 空狀態 */

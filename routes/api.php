@@ -105,6 +105,10 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
             ->name('admin.clients.update');
         Route::delete('/{id}', [App\Http\Controllers\Admin\ClientController::class, 'destroy'])
             ->name('admin.clients.destroy');
+        Route::post('/{id}/restore', [App\Http\Controllers\Admin\ClientController::class, 'restore'])
+            ->name('admin.clients.restore');
+        Route::delete('/{id}/force', [App\Http\Controllers\Admin\ClientController::class, 'forceDelete'])
+            ->name('admin.clients.force-delete');
         Route::post('/{id}/toggle-status', [App\Http\Controllers\Admin\ClientController::class, 'toggleStatus'])
             ->name('admin.clients.toggle-status');
         Route::post('/{id}/regenerate-api-key', [App\Http\Controllers\Admin\ClientController::class, 'regenerateApiKey'])
@@ -119,18 +123,36 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
             ->name('admin.clients.permissions.update');
     });
 
-    // 角色管理
+    // 角色管理（客戶端角色）
     Route::prefix('roles')->group(function () {
         Route::get('/', [App\Http\Controllers\Admin\RoleController::class, 'index'])
             ->name('admin.roles.index');
         Route::post('/', [App\Http\Controllers\Admin\RoleController::class, 'store'])
             ->name('admin.roles.store');
+        Route::put('/{id}', [App\Http\Controllers\Admin\RoleController::class, 'update'])
+            ->name('admin.roles.update');
         Route::delete('/{id}', [App\Http\Controllers\Admin\RoleController::class, 'destroy'])
             ->name('admin.roles.destroy');
         Route::get('/{id}/permissions', [App\Http\Controllers\Admin\RoleController::class, 'getPermissions'])
             ->name('admin.roles.permissions.get');
         Route::post('/{id}/permissions', [App\Http\Controllers\Admin\RoleController::class, 'updatePermissions'])
             ->name('admin.roles.permissions.update');
+    });
+
+    // 客戶端角色管理（別名路由，與 roles 相同）
+    Route::prefix('client-roles')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\RoleController::class, 'index'])
+            ->name('admin.client-roles.index');
+        Route::post('/', [App\Http\Controllers\Admin\RoleController::class, 'store'])
+            ->name('admin.client-roles.store');
+        Route::put('/{id}', [App\Http\Controllers\Admin\RoleController::class, 'update'])
+            ->name('admin.client-roles.update');
+        Route::delete('/{id}', [App\Http\Controllers\Admin\RoleController::class, 'destroy'])
+            ->name('admin.client-roles.destroy');
+        Route::get('/{id}/permissions', [App\Http\Controllers\Admin\RoleController::class, 'getPermissions'])
+            ->name('admin.client-roles.permissions.get');
+        Route::post('/{id}/permissions', [App\Http\Controllers\Admin\RoleController::class, 'updatePermissions'])
+            ->name('admin.client-roles.permissions.update');
     });
 
     // Stored Procedures 管理
@@ -171,4 +193,40 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/statistics', [App\Http\Controllers\Admin\LogController::class, 'statistics'])
             ->name('admin.logs.statistics');
     });
+
+    // 使用者管理
+    Route::prefix('users')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\UserController::class, 'index'])
+            ->name('admin.users.index');
+        Route::get('/{id}', [App\Http\Controllers\Admin\UserController::class, 'show'])
+            ->name('admin.users.show');
+        Route::post('/', [App\Http\Controllers\Admin\UserController::class, 'store'])
+            ->name('admin.users.store');
+        Route::put('/{id}', [App\Http\Controllers\Admin\UserController::class, 'update'])
+            ->name('admin.users.update');
+        Route::delete('/{id}', [App\Http\Controllers\Admin\UserController::class, 'destroy'])
+            ->name('admin.users.destroy');
+    });
+
+    // 個人資料管理
+    Route::get('/profile', [App\Http\Controllers\Admin\UserController::class, 'profile'])
+        ->name('admin.profile');
+    Route::put('/profile', [App\Http\Controllers\Admin\UserController::class, 'updateProfile'])
+        ->name('admin.profile.update');
+
+    // 後台角色管理
+    Route::prefix('admin-roles')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\AdminRoleController::class, 'index'])
+            ->name('admin.admin-roles.index');
+        Route::put('/{id}', [App\Http\Controllers\Admin\AdminRoleController::class, 'update'])
+            ->name('admin.admin-roles.update');
+        Route::get('/{id}/permissions', [App\Http\Controllers\Admin\AdminRoleController::class, 'getPermissions'])
+            ->name('admin.admin-roles.permissions.get');
+        Route::post('/{id}/permissions', [App\Http\Controllers\Admin\AdminRoleController::class, 'updatePermissions'])
+            ->name('admin.admin-roles.permissions.update');
+    });
+
+    // 後台權限列表
+    Route::get('/admin-permissions', [App\Http\Controllers\Admin\AdminRoleController::class, 'getAllPermissions'])
+        ->name('admin.admin-permissions.index');
 });
