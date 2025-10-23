@@ -532,23 +532,157 @@ export default {
   height: 16px;
 }
 
-/* 響應式設計 */
-@media (max-width: 768px) {
+/* 響應式設計 - 平板 */
+@media (max-width: 1024px) {
   .form-row {
     grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .section-title {
+    font-size: 16px;
+  }
+}
+
+/* 響應式設計 - 手機 */
+@media (max-width: 768px) {
+  .function-editor {
+    margin: 0;
   }
 
   .page-header {
     flex-direction: column;
     gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+  }
+
+  .header-left {
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .btn-back {
+    width: fit-content;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .page-description {
+    font-size: 13px;
   }
 
   .header-right {
     width: 100%;
+    flex-direction: row;
   }
 
   .header-right .btn {
     flex: 1;
+    justify-content: center;
+  }
+
+  .editor-content {
+    gap: 20px;
+  }
+
+  .editor-section {
+    border-radius: 6px;
+  }
+
+  .section-title {
+    font-size: 16px;
+    padding: 15px;
+  }
+
+  .section-content {
+    padding: 15px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+
+  .form-label {
+    font-size: 13px;
+  }
+
+  .form-input,
+  .form-textarea {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .form-hint {
+    font-size: 11px;
+  }
+}
+
+/* 響應式設計 - 小型手機 */
+@media (max-width: 640px) {
+  .page-header {
+    margin-bottom: 15px;
+    padding-bottom: 12px;
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  .page-description {
+    font-size: 12px;
+  }
+
+  .btn-back {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .btn-back .icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .header-right .btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .btn-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .editor-content {
+    gap: 15px;
+  }
+
+  .section-title {
+    font-size: 15px;
+    padding: 12px;
+  }
+
+  .section-content {
+    padding: 12px;
+  }
+
+  .form-row {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .checkbox-label {
+    font-size: 13px;
+  }
+
+  .form-checkbox {
+    width: 16px;
+    height: 16px;
   }
 }
 </style>

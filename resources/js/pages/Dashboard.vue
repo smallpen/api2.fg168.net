@@ -289,21 +289,102 @@ code {
   color: #374151;
 }
 
-/* 響應式設計 */
+/* 響應式設計 - 平板 */
 @media (max-width: 1024px) {
   .trend-item {
     grid-template-columns: 60px 1fr 80px;
+    gap: 10px;
+  }
+
+  .stat-detail {
+    flex-direction: column;
+    gap: 5px;
   }
 }
 
+/* 響應式設計 - 移動裝置 */
 @media (max-width: 768px) {
+  .stats-grid {
+    margin-bottom: 20px;
+  }
+
   .trend-item {
     grid-template-columns: 1fr;
-    gap: 5px;
+    gap: 8px;
+    padding: 10px;
+    background-color: #f9fafb;
+    border-radius: 6px;
   }
 
   .trend-date {
     text-align: left;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  .trend-total {
+    text-align: left;
+  }
+
+  .trend-bar {
+    height: 28px;
+    font-size: 13px;
+  }
+
+  /* 表格在移動裝置上的優化 */
+  .table {
+    font-size: 12px;
+  }
+
+  .table th:first-child,
+  .table td:first-child {
+    width: 40px;
+  }
+}
+
+/* 響應式設計 - 小型手機 */
+@media (max-width: 640px) {
+  .dashboard {
+    margin: 0 -12px;
+  }
+
+  .stats-grid {
+    margin-bottom: 15px;
+  }
+
+  .stat-detail {
+    font-size: 11px;
+  }
+
+  .trend-chart {
+    gap: 10px;
+  }
+
+  .trend-item {
+    padding: 8px;
+  }
+
+  .trend-bar {
+    height: 24px;
+    font-size: 12px;
+    padding: 0 8px;
+  }
+
+  /* 在小螢幕上隱藏排名欄位 */
+  .table th:first-child,
+  .table td:first-child {
+    display: none;
+  }
+
+  /* 調整識別碼欄位 */
+  code {
+    font-size: 11px;
+    padding: 1px 4px;
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 </style>

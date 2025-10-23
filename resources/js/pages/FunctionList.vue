@@ -89,30 +89,30 @@
             </td>
           </tr>
           <tr v-for="func in functions" :key="func.id" class="data-row">
-            <td>
+            <td data-label="名稱">
               <div class="function-name">
                 <strong>{{ func.name }}</strong>
                 <span v-if="func.description" class="function-description">{{ func.description }}</span>
               </div>
             </td>
-            <td>
+            <td data-label="識別碼">
               <code class="identifier-code">{{ func.identifier }}</code>
             </td>
-            <td>
+            <td data-label="Stored Procedure">
               <code class="sp-code">{{ func.stored_procedure }}</code>
             </td>
-            <td>
+            <td data-label="狀態">
               <span :class="['status-badge', func.is_active ? 'status-active' : 'status-inactive']">
                 {{ func.is_active ? '已啟用' : '已停用' }}
               </span>
             </td>
-            <td>
+            <td data-label="參數數量">
               <span class="param-count">{{ func.parameters_count || 0 }}</span>
             </td>
-            <td>
+            <td data-label="建立時間">
               <span class="date-text">{{ formatDate(func.created_at) }}</span>
             </td>
-            <td class="actions-column">
+            <td data-label="操作" class="actions-column">
               <div class="action-buttons">
                 <button
                   @click="editFunction(func)"
@@ -838,5 +838,233 @@ export default {
 .btn-icon {
   width: 16px;
   height: 16px;
+}
+
+/* 響應式設計 - 平板 */
+@media (max-width: 1024px) {
+  .page-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+
+  .header-right {
+    width: 100%;
+  }
+
+  .header-right .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filter-row {
+    flex-wrap: wrap;
+  }
+
+  .filter-search {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+
+  .filter-select-item {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .filter-button {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .filter-button .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* 響應式設計 - 手機 */
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 20px;
+  }
+
+  .page-description {
+    font-size: 13px;
+  }
+
+  .filter-section {
+    padding: 15px;
+  }
+
+  /* 隱藏表格，改用卡片式佈局 */
+  .table-container {
+    overflow: visible;
+  }
+
+  .data-table thead {
+    display: none;
+  }
+
+  .data-table,
+  .data-table tbody,
+  .data-table tr,
+  .data-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .data-row {
+    margin-bottom: 15px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: white;
+  }
+
+  .data-row:hover {
+    background-color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .data-table td {
+    padding: 8px 0;
+    border-bottom: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .data-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+    width: 100px;
+  }
+
+  .data-table td:last-child {
+    padding-top: 12px;
+    margin-top: 12px;
+    border-top: 1px solid #f3f4f6;
+  }
+
+  .actions-column {
+    width: 100%;
+    text-align: left;
+  }
+
+  .action-buttons {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .btn-action {
+    flex: 1;
+    min-width: calc(50% - 3px);
+    justify-content: center;
+  }
+
+  .btn-action .btn-text {
+    display: inline-block !important;
+  }
+
+  .function-name {
+    flex: 1;
+    text-align: right;
+  }
+
+  .identifier-code,
+  .sp-code {
+    font-size: 11px;
+    word-break: break-all;
+    text-align: right;
+    max-width: calc(100% - 110px);
+  }
+
+  .pagination {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+
+  .pagination-info {
+    text-align: center;
+  }
+
+  .pagination-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .page-numbers {
+    order: -1;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .pagination-controls > .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* 響應式設計 - 小型手機 */
+@media (max-width: 640px) {
+  .page-title {
+    font-size: 18px;
+  }
+
+  .filter-section {
+    padding: 12px;
+  }
+
+  .filter-row {
+    gap: 10px;
+  }
+
+  .filter-select-item,
+  .filter-button {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+
+  .data-row {
+    padding: 12px;
+  }
+
+  .data-table td {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .data-table td::before {
+    width: 100%;
+  }
+
+  .function-name,
+  .identifier-code,
+  .sp-code {
+    text-align: left;
+    max-width: 100%;
+  }
+
+  .action-buttons {
+    gap: 8px;
+  }
+
+  .btn-action {
+    min-width: 100%;
+    padding: 10px;
+  }
+
+  .page-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
 }
 </style>

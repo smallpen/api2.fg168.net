@@ -565,4 +565,130 @@ export default {
   width: 16px;
   height: 16px;
 }
+
+/* 響應式設計 - 平板 */
+@media (max-width: 1024px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* 響應式設計 - 手機 */
+@media (max-width: 768px) {
+  .parameter-builder {
+    padding: 15px;
+  }
+
+  .builder-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .builder-title {
+    font-size: 16px;
+  }
+
+  .builder-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .parameter-item {
+    padding: 12px;
+  }
+
+  .parameter-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .parameter-order {
+    justify-content: center;
+  }
+
+  .parameter-actions {
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-icon-sm {
+    padding: 8px;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .btn-icon-sm .icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .validation-rules {
+    gap: 8px;
+  }
+
+  .rule-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rule-item .btn-icon-sm {
+    width: 100%;
+  }
+}
+
+/* 響應式設計 - 小型手機 */
+@media (max-width: 640px) {
+  .parameter-builder {
+    padding: 12px;
+  }
+
+  .builder-header {
+    gap: 10px;
+  }
+
+  .builder-title {
+    font-size: 15px;
+  }
+
+  .parameter-item {
+    padding: 10px;
+  }
+
+  .parameter-form {
+    gap: 12px;
+  }
+
+  .form-label {
+    font-size: 13px;
+  }
+
+  .form-input,
+  .form-select {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .form-hint {
+    font-size: 11px;
+  }
+
+  .empty-state {
+    padding: 30px 15px;
+  }
+
+  .empty-icon {
+    width: 40px;
+    height: 40px;
+  }
+}
 </style>

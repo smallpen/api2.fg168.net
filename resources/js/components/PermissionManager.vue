@@ -250,8 +250,13 @@
       <!-- 後台角色列表 -->
       <div class="roles-section">
         <div class="section-header">
-          <h3>後台管理角色</h3>
-          <p class="section-description">管理後台管理員可以使用哪些後台功能</p>
+          <div>
+            <h3>後台管理角色</h3>
+            
+          </div>
+          <button @click="showCreateAdminRoleModal = true" class="btn btn-sm btn-primary">
+            新增後台角色
+          </button>
         </div>
 
         <!-- 載入中 -->
@@ -445,6 +450,48 @@
       </div>
     </div>
 
+    <!-- 創建後台角色 Modal -->
+    <div v-if="showCreateAdminRoleModal" class="modal-overlay" @click.self="showCreateAdminRoleModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>新增後台角色</h2>
+          <button @click="showCreateAdminRoleModal = false" class="btn-close">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="createAdminRole">
+            <div class="form-group">
+              <label>角色名稱（英文識別碼）*</label>
+              <input v-model="newAdminRole.name" type="text" class="form-input" required placeholder="例如：content_manager" />
+              <small class="form-hint">只能使用小寫英文字母、數字和底線</small>
+            </div>
+
+            <div class="form-group">
+              <label>顯示名稱 *</label>
+              <input v-model="newAdminRole.display_name" type="text" class="form-input" required placeholder="例如：內容管理員" />
+            </div>
+
+            <div class="form-group">
+              <label>角色描述</label>
+              <textarea v-model="newAdminRole.description" class="form-input" rows="3" placeholder="描述此角色的用途和權限範圍"></textarea>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" @click="showCreateAdminRoleModal = false" class="btn btn-secondary">
+                取消
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="creatingAdmin">
+                {{ creatingAdmin ? '建立中...' : '建立角色' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <!-- 編輯後台角色 Modal -->
     <div v-if="showEditAdminRoleModalFlag" class="modal-overlay" @click.self="closeEditAdminRoleModal">
       <div class="modal-content">
@@ -536,12 +583,19 @@ export default {
       
       // Modal
       showCreateRoleModal: false,
+      showCreateAdminRoleModal: false,
       showEditRoleModalFlag: false,
       showEditAdminRoleModalFlag: false,
       creating: false,
+      creatingAdmin: false,
       updating: false,
       updatingAdmin: false,
       newRole: {
+        name: '',
+        display_name: '',
+        description: '',
+      },
+      newAdminRole: {
         name: '',
         display_name: '',
         description: '',
@@ -1053,6 +1107,29 @@ export default {
     },
 
     /**
+     * 創建後台角色
+     */
+    async createAdminRole() {
+      this.creatingAdmin = true;
+      
+      try {
+        const response = await this.$axios.post('/api/admin/admin-roles', this.newAdminRole);
+        
+        if (response.data.success) {
+          this.showCreateAdminRoleModal = false;
+          this.newAdminRole = { name: '', display_name: '', description: '' };
+          this.loadAdminRoles();
+          toast('後台角色創建成功', 'success');
+        }
+      } catch (err) {
+        console.error('創建後台角色失敗:', err);
+        showError('創建失敗', err.response?.data?.error?.message || '創建後台角色失敗，請稍後再試');
+      } finally {
+        this.creatingAdmin = false;
+      }
+    },
+
+    /**
      * 更新後台角色
      */
     async updateAdminRole() {
@@ -1072,7 +1149,7 @@ export default {
         }
       } catch (err) {
         console.error('更新後台角色失敗:', err);
-        showError('更新失敗', err.response?.data?.message || '更新後台角色失敗，請稍後再試');
+        showError('更新失敗', err.response?.data?.error?.message || '更新後台角色失敗，請稍後再試');
       } finally {
         this.updatingAdmin = false;
       }

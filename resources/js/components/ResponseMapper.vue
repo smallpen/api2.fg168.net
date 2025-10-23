@@ -618,4 +618,195 @@ export default {
   width: 16px;
   height: 16px;
 }
+
+/* 響應式設計 - 平板 */
+@media (max-width: 1024px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* 響應式設計 - 手機 */
+@media (max-width: 768px) {
+  .response-mapper {
+    padding: 15px;
+  }
+
+  .mapper-title {
+    font-size: 16px;
+  }
+
+  .tabs {
+    margin-bottom: 15px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .section-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .section-description {
+    font-size: 13px;
+  }
+
+  .section-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .field-item,
+  .error-item {
+    padding: 12px;
+  }
+
+  .field-header,
+  .error-header {
+    margin-bottom: 12px;
+  }
+
+  .field-form,
+  .error-form {
+    gap: 12px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .form-label {
+    font-size: 13px;
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .empty-state {
+    padding: 30px 15px;
+  }
+
+  .empty-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .empty-state p {
+    font-size: 14px;
+  }
+}
+
+/* 響應式設計 - 小型手機 */
+@media (max-width: 640px) {
+  .response-mapper {
+    padding: 12px;
+  }
+
+  .mapper-header {
+    margin-bottom: 15px;
+  }
+
+  .mapper-title {
+    font-size: 15px;
+  }
+
+  .tabs {
+    margin-bottom: 12px;
+  }
+
+  .tab-btn {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .section-header {
+    gap: 10px;
+  }
+
+  .section-description {
+    font-size: 12px;
+  }
+
+  .field-item,
+  .error-item {
+    padding: 10px;
+  }
+
+  .field-header,
+  .error-header {
+    margin-bottom: 10px;
+  }
+
+  .field-number,
+  .error-number {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+
+  .btn-icon-sm {
+    padding: 6px;
+  }
+
+  .btn-icon-sm .icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .field-form,
+  .error-form {
+    gap: 10px;
+  }
+
+  .form-row {
+    gap: 10px;
+  }
+
+  .form-label {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    padding: 7px 9px;
+    font-size: 12px;
+  }
+
+  .btn-sm {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .btn-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .empty-state {
+    padding: 25px 12px;
+  }
+
+  .empty-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .empty-state p {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+}
 </style>

@@ -462,4 +462,98 @@ export default {
   width: 16px;
   height: 16px;
 }
+
+/* 響應式設計 - 手機 */
+@media (max-width: 768px) {
+  .sp-selector {
+    padding: 15px;
+  }
+
+  .selector-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .btn-icon-only {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sp-params-info {
+    padding: 12px;
+  }
+
+  .info-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .info-title {
+    font-size: 15px;
+  }
+
+  .info-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .params-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .params-table table {
+    min-width: 500px;
+  }
+
+  .params-table th,
+  .params-table td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .params-table code {
+    font-size: 11px;
+  }
+
+  .help-text {
+    font-size: 12px;
+  }
+}
+
+/* 響應式設計 - 小型手機 */
+@media (max-width: 640px) {
+  .sp-selector {
+    padding: 12px;
+  }
+
+  .form-label {
+    font-size: 13px;
+  }
+
+  .form-select {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .sp-params-info {
+    padding: 10px;
+  }
+
+  .info-title {
+    font-size: 14px;
+  }
+
+  .params-table th,
+  .params-table td {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
+  .param-direction {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+}
 </style>

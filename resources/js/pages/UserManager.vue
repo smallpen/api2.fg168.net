@@ -62,11 +62,11 @@
             </td>
           </tr>
           <tr v-for="user in users" :key="user.id" class="data-row">
-            <td>
+            <td data-label="名稱">
               <strong>{{ user.name }}</strong>
             </td>
-            <td>{{ user.email }}</td>
-            <td>
+            <td data-label="電子郵件">{{ user.email }}</td>
+            <td data-label="角色">
               <div class="roles-cell">
                 <span v-if="user.admin_roles && user.admin_roles.length > 0" class="role-badge">
                   {{ user.admin_roles[0].display_name || user.admin_roles[0].name }}
@@ -74,10 +74,10 @@
                 <span v-else class="no-roles">無後台角色</span>
               </div>
             </td>
-            <td>
+            <td data-label="建立時間">
               <span class="date-text">{{ formatDate(user.created_at) }}</span>
             </td>
-            <td class="actions-column">
+            <td data-label="操作" class="actions-column">
               <div class="action-buttons">
                 <button
                   @click="showEditModal(user)"
@@ -163,6 +163,7 @@
             <div class="form-group">
               <label>電子郵件 <span class="required">*</span></label>
               <input v-model="formData.email" type="email" class="form-input" required />
+              <small class="form-hint">此電子郵件將用於登入後台系統</small>
             </div>
 
             <div class="form-group">
@@ -866,5 +867,306 @@ export default {
   padding: 10px;
   background-color: #f9fafb;
   border-radius: 4px;
+}
+
+.form-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* 響應式設計 - 平板 */
+@media (max-width: 1024px) {
+  .page-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+
+  .header-right {
+    width: 100%;
+  }
+
+  .header-right .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-action .btn-text {
+    display: none;
+  }
+  
+  .btn-action {
+    padding: 6px;
+  }
+  
+  .actions-column {
+    width: 100px;
+  }
+}
+
+/* 響應式設計 - 手機 */
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 20px;
+  }
+
+  .page-description {
+    font-size: 13px;
+  }
+
+  .filter-section {
+    padding: 15px;
+  }
+
+  .filter-search {
+    min-width: 100%;
+  }
+
+  /* 隱藏表格，改用卡片式佈局 */
+  .table-container {
+    overflow: visible;
+  }
+
+  .data-table thead {
+    display: none;
+  }
+
+  .data-table,
+  .data-table tbody,
+  .data-table tr,
+  .data-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .data-row {
+    margin-bottom: 15px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: white;
+  }
+
+  .data-row:hover {
+    background-color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .data-table td {
+    padding: 8px 0;
+    border-bottom: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .data-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+    width: 100px;
+  }
+
+  .data-table td:last-child {
+    padding-top: 12px;
+    margin-top: 12px;
+    border-top: 1px solid #f3f4f6;
+  }
+
+  .actions-column {
+    width: 100%;
+    text-align: left;
+  }
+
+  .action-buttons {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .btn-action {
+    flex: 1;
+    min-width: calc(50% - 3px);
+    justify-content: center;
+  }
+
+  .btn-action .btn-text {
+    display: inline-block !important;
+  }
+
+  .roles-cell {
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  .pagination {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+
+  .pagination-info {
+    text-align: center;
+  }
+
+  .pagination-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .page-numbers {
+    order: -1;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .pagination-controls > .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Modal 優化 */
+  .modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .modal-header {
+    padding: 15px;
+  }
+
+  .modal-header h2 {
+    font-size: 16px;
+  }
+
+  .modal-body {
+    padding: 15px;
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+  }
+
+  .form-group label {
+    font-size: 13px;
+  }
+
+  .form-input {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .form-hint {
+    font-size: 11px;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    gap: 8px;
+    padding-top: 15px;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .radio-group {
+    gap: 8px;
+  }
+
+  .radio-label {
+    font-size: 13px;
+  }
+}
+
+/* 響應式設計 - 小型手機 */
+@media (max-width: 640px) {
+  .page-title {
+    font-size: 18px;
+  }
+
+  .filter-section {
+    padding: 12px;
+  }
+
+  .data-row {
+    padding: 12px;
+  }
+
+  .data-table td {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .data-table td::before {
+    width: 100%;
+  }
+
+  .roles-cell {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .action-buttons {
+    gap: 8px;
+  }
+
+  .btn-action {
+    min-width: 100%;
+    padding: 10px;
+  }
+
+  .page-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .modal-header {
+    padding: 12px;
+  }
+
+  .modal-header h2 {
+    font-size: 15px;
+  }
+
+  .modal-body {
+    padding: 12px;
+  }
+
+  .form-group {
+    margin-bottom: 12px;
+  }
+
+  .form-group label {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+
+  .form-input {
+    padding: 7px 9px;
+    font-size: 12px;
+  }
+
+  .form-hint {
+    font-size: 10px;
+    margin-top: 4px;
+  }
+
+  .radio-label {
+    font-size: 12px;
+  }
+
+  .no-data-hint {
+    font-size: 12px;
+    padding: 8px;
+  }
 }
 </style>

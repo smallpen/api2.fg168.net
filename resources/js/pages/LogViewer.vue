@@ -182,78 +182,78 @@
           <tr v-for="log in logs" :key="log.id" class="data-row">
             <!-- API 請求日誌 -->
             <template v-if="currentTab === 'api-requests'">
-              <td>
+              <td data-label="Function">
                 <code class="identifier-code">{{ log.function?.identifier || '-' }}</code>
               </td>
-              <td>
+              <td data-label="客戶端">
                 <span class="client-name">{{ log.client?.name || '-' }}</span>
               </td>
-              <td>
+              <td data-label="狀態碼">
                 <span :class="['status-badge', getStatusClass(log.http_status)]">
                   {{ log.http_status }}
                 </span>
               </td>
-              <td>
+              <td data-label="執行時間">
                 <span class="execution-time">{{ log.execution_time?.toFixed(3) }}s</span>
               </td>
-              <td>
+              <td data-label="IP 地址">
                 <span class="ip-address">{{ log.ip_address }}</span>
               </td>
-              <td>
+              <td data-label="時間">
                 <span class="date-text">{{ formatDate(log.created_at) }}</span>
               </td>
             </template>
 
             <!-- 錯誤日誌 -->
             <template v-if="currentTab === 'errors'">
-              <td>
+              <td data-label="錯誤類型">
                 <code class="error-type">{{ log.type }}</code>
               </td>
-              <td>
+              <td data-label="錯誤訊息">
                 <div class="error-message-cell">{{ truncate(log.message, 80) }}</div>
               </td>
-              <td>
+              <td data-label="時間">
                 <span class="date-text">{{ formatDate(log.created_at) }}</span>
               </td>
             </template>
 
             <!-- 安全日誌 -->
             <template v-if="currentTab === 'security'">
-              <td>
+              <td data-label="事件類型">
                 <span :class="['event-badge', getEventClass(log.event_type)]">
                   {{ formatEventType(log.event_type) }}
                 </span>
               </td>
-              <td>
+              <td data-label="客戶端">
                 <span class="client-name">{{ log.client?.name || '-' }}</span>
               </td>
-              <td>
+              <td data-label="IP 地址">
                 <span class="ip-address">{{ log.ip_address }}</span>
               </td>
-              <td>
+              <td data-label="時間">
                 <span class="date-text">{{ formatDate(log.created_at) }}</span>
               </td>
             </template>
 
             <!-- 審計日誌 -->
             <template v-if="currentTab === 'audit'">
-              <td>
+              <td data-label="使用者">
                 <span class="user-name">{{ log.user?.name || '-' }}</span>
               </td>
-              <td>
+              <td data-label="操作">
                 <span :class="['action-badge', getActionClass(log.action)]">
                   {{ formatAction(log.action) }}
                 </span>
               </td>
-              <td>
+              <td data-label="資源類型">
                 <span class="resource-type">{{ formatResourceType(log.resource_type) }}</span>
               </td>
-              <td>
+              <td data-label="時間">
                 <span class="date-text">{{ formatDate(log.created_at) }}</span>
               </td>
             </template>
 
-            <td class="actions-column">
+            <td data-label="操作" class="actions-column">
               <div class="action-buttons">
                 <button
                   @click="viewDetail(log)"
@@ -328,7 +328,7 @@
     </div>
 
     <!-- 統計資訊 Modal -->
-    <div v-if="showStatisticsModal" class="modal-overlay" @click="closeStatisticsModal">
+    <div v-if="showStatisticsModal" class="modal-overlay" @click.self="closeStatisticsModal">
       <div class="modal-content modal-large" @click.stop>
         <div class="modal-header">
           <h2 class="modal-title">日誌統計資訊</h2>
@@ -339,7 +339,14 @@
           </button>
         </div>
         <div class="modal-body">
-          <div v-if="statistics" class="statistics-grid">
+          <!-- 載入中 -->
+          <div v-if="loadingStatistics" class="loading-container">
+            <div class="spinner"></div>
+            <p>載入統計資訊中...</p>
+          </div>
+
+          <!-- 統計資訊內容 -->
+          <div v-else-if="statistics" class="statistics-grid">
             <!-- API 請求統計 -->
             <div class="stat-card">
               <h3 class="stat-title">API 請求</h3>
@@ -362,7 +369,7 @@
                 </div>
                 <div class="stat-item">
                   <span class="stat-label">平均執行時間</span>
-                  <span class="stat-value">{{ (statistics.api_requests?.avg_execution_time || 0).toFixed(3) }}s</span>
+                  <span class="stat-value">{{ formatExecutionTime(statistics.api_requests?.avg_execution_time) }}s</span>
                 </div>
               </div>
             </div>
@@ -408,6 +415,14 @@
               </div>
             </div>
           </div>
+
+          <!-- 無資料提示 -->
+          <div v-else class="empty-state">
+            <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <p>無統計資訊</p>
+          </div>
         </div>
       </div>
     </div>
@@ -445,6 +460,7 @@ export default {
       showDetailModal: false,
       selectedLog: null,
       showStatisticsModal: false,
+      loadingStatistics: false,
       statistics: null,
       logTabs: [
         {
@@ -697,6 +713,10 @@ export default {
      * 載入統計資訊
      */
     async loadStatistics() {
+      this.loadingStatistics = true;
+      this.showStatisticsModal = true;
+      this.statistics = null;
+
       try {
         const params = {};
         if (this.filters.start_date) {
@@ -706,15 +726,24 @@ export default {
           params.end_date = this.filters.end_date;
         }
 
+        console.log('載入統計資訊，參數:', params);
         const response = await this.$axios.get('/api/admin/logs/statistics', { params });
+        console.log('統計資訊回應:', response.data);
 
         if (response.data.success) {
           this.statistics = response.data.data;
-          this.showStatisticsModal = true;
+          console.log('統計資訊已設定:', this.statistics);
+        } else {
+          console.error('載入統計資訊失敗:', response.data);
+          alert('載入統計資訊失敗');
         }
       } catch (err) {
-        console.error('載入統計資訊失敗:', err);
-        alert(err.response?.data?.error?.message || '載入統計資訊失敗');
+        console.error('載入統計資訊錯誤:', err);
+        console.error('錯誤詳情:', err.response?.data);
+        alert(err.response?.data?.error?.message || err.response?.data?.message || '載入統計資訊失敗，請稍後再試');
+      } finally {
+        this.loadingStatistics = false;
+        console.log('載入完成，loadingStatistics:', this.loadingStatistics, 'statistics:', this.statistics);
       }
     },
 
@@ -805,6 +834,16 @@ export default {
       if (!text) return '-';
       if (text.length <= length) return text;
       return text.substring(0, length) + '...';
+    },
+
+    /**
+     * 格式化執行時間
+     */
+    formatExecutionTime(time) {
+      if (time === null || time === undefined) return '0.000';
+      const num = Number(time);
+      if (isNaN(num)) return '0.000';
+      return num.toFixed(3);
     },
 
     /**
@@ -1355,9 +1394,10 @@ export default {
   max-height: 80vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-.modal-large {
+.modal-content.modal-large {
   max-width: 900px;
 }
 
@@ -1399,6 +1439,8 @@ export default {
 .modal-body {
   padding: 24px;
   overflow-y: auto;
+  flex: 1;
+  min-height: 200px;
 }
 
 /* 日誌詳情 */
@@ -1422,8 +1464,9 @@ export default {
 /* 統計資訊 */
 .statistics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 20px;
+  width: 100%;
 }
 
 .stat-card {
@@ -1431,6 +1474,7 @@ export default {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 20px;
+  min-height: 150px;
 }
 
 .stat-title {
@@ -1473,5 +1517,348 @@ export default {
 
 .stat-value.stat-danger {
   color: #dc2626;
+}
+
+/* 響應式設計 - 平板 */
+@media (max-width: 1024px) {
+  .page-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+
+  .header-right {
+    width: 100%;
+  }
+
+  .header-right .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filter-row {
+    flex-direction: column;
+  }
+
+  .filter-item {
+    min-width: 100%;
+  }
+}
+
+/* 響應式設計 - 手機 */
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 20px;
+  }
+
+  .page-description {
+    font-size: 13px;
+  }
+
+  /* 標籤優化 */
+  .log-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    border-bottom: none;
+    margin-bottom: 15px;
+  }
+
+  .tab-button {
+    padding: 12px 10px;
+    font-size: 14px;
+    white-space: normal;
+    text-align: center;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 0;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tab-button.active {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+  }
+
+  .tab-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .tab-count {
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  /* 篩選區優化 */
+  .filter-section {
+    padding: 15px;
+  }
+
+  .filter-label {
+    font-size: 12px;
+  }
+
+  .filter-input,
+  .filter-select {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  /* 隱藏表格，改用卡片式佈局 */
+  .table-container {
+    overflow: visible;
+  }
+
+  .data-table thead {
+    display: none;
+  }
+
+  .data-table,
+  .data-table tbody,
+  .data-table tr,
+  .data-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .data-row {
+    margin-bottom: 15px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: white;
+  }
+
+  .data-row:hover {
+    background-color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .data-table td {
+    padding: 8px 0;
+    border-bottom: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .data-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+    width: 100px;
+  }
+
+  .data-table td:last-child {
+    padding-top: 12px;
+    margin-top: 12px;
+    border-top: 1px solid #f3f4f6;
+  }
+
+  .actions-column {
+    width: 100%;
+    text-align: left;
+  }
+
+  .action-buttons {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .btn-action {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .btn-action .btn-text {
+    display: inline-block !important;
+  }
+
+  .error-message-cell {
+    max-width: 100%;
+    white-space: normal;
+    word-break: break-word;
+    text-align: right;
+  }
+
+  .identifier-code,
+  .error-type {
+    font-size: 11px;
+    word-break: break-all;
+  }
+
+  .pagination {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+
+  .pagination-info {
+    text-align: center;
+  }
+
+  .pagination-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .page-numbers {
+    order: -1;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .pagination-controls > .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Modal 優化 */
+  .modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .modal-header {
+    padding: 15px;
+  }
+
+  .modal-title {
+    font-size: 16px;
+  }
+
+  .modal-body {
+    padding: 15px;
+  }
+
+  .json-display {
+    font-size: 11px;
+    padding: 12px;
+  }
+
+  .statistics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    padding: 15px;
+  }
+
+  .stat-title {
+    font-size: 15px;
+  }
+
+  .stat-label {
+    font-size: 13px;
+  }
+
+  .stat-value {
+    font-size: 15px;
+  }
+}
+
+/* 響應式設計 - 小型手機 */
+@media (max-width: 640px) {
+  .page-title {
+    font-size: 18px;
+  }
+
+  .filter-section {
+    padding: 12px;
+  }
+
+  .log-tabs {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .tab-button {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+
+  .tab-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .tab-count {
+    font-size: 11px;
+  }
+
+  .data-row {
+    padding: 12px;
+  }
+
+  .data-table td {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .data-table td::before {
+    width: 100%;
+  }
+
+  .error-message-cell {
+    text-align: left;
+  }
+
+  .action-buttons {
+    gap: 8px;
+  }
+
+  .btn-action {
+    padding: 10px;
+  }
+
+  .page-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .modal-header {
+    padding: 12px;
+  }
+
+  .modal-title {
+    font-size: 15px;
+  }
+
+  .modal-body {
+    padding: 12px;
+  }
+
+  .json-display {
+    font-size: 10px;
+    padding: 10px;
+  }
+
+  .stat-card {
+    padding: 12px;
+  }
+
+  .stat-title {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  .stat-items {
+    gap: 10px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+  }
+
+  .stat-value {
+    font-size: 14px;
+  }
 }
 </style>
